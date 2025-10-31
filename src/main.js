@@ -183,8 +183,17 @@ class HalloweenGhostHouse {
                 this.ghostManager.update(deltaTime, this.camera);
             }
 
-            // Render
-            this.renderer.render(this.scene, this.camera);
+            // Update game manager
+            this.gameManager.update(deltaTime);
+
+            // Render - works with both XR and non-XR
+            if (this.arManager.isARActive && frame) {
+                // XR rendering handled by WebXR
+                this.renderer.render(this.scene, this.camera);
+            } else {
+                // Fallback regular rendering
+                this.renderer.render(this.scene, this.camera);
+            }
         });
     }
 }

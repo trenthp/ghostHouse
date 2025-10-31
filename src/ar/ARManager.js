@@ -17,35 +17,43 @@ export class ARManager {
             navigator.xr.isSessionSupported('immersive-ar')
                 .then((supported) => {
                     this.isARSupported = supported;
+                    console.log('AR Supported:', supported);
                     if (supported) {
-                        this.setupARButton();
+                        console.log('AR is available on this device!');
+                        // Auto-start AR if supported
+                        this.startAR();
+                    } else {
+                        console.log('AR not supported, using fallback camera view');
                     }
                 })
-                .catch(() => {
-                    console.log('AR not supported');
+                .catch((err) => {
+                    console.warn('Error checking AR support:', err);
                 });
+        } else {
+            console.warn('WebXR not available');
         }
     }
 
-    setupARButton() {
-        // In a real app, you'd add an AR button
-        // For this demo, AR is enabled by default if supported
-        console.log('AR is supported on this device');
-    }
-
     async startAR() {
-        if (!this.isARSupported) return;
+        if (!this.isARSupported) {
+            console.log('AR not supported, skipping AR session');
+            return;
+        }
 
         try {
+            console.log('Requesting AR session...');
             this.xrSession = await navigator.xr.requestSession('immersive-ar', {
-                requiredFeatures: ['hit-test', 'dom-overlay'],
+                requiredFeatures: ['hit-test'],
+                optionalFeatures: ['dom-overlay', 'dom-overlay-for-handheld-ar'],
                 domOverlay: { root: document.body }
             });
 
+            console.log('AR Session started successfully');
             this.isARActive = true;
             this.renderer.xr.setSession(this.xrSession);
         } catch (err) {
-            console.warn('Failed to start AR:', err);
+            console.warn('Failed to start AR session:', err);
+            this.isARActive = false;
         }
     }
 
@@ -53,6 +61,7 @@ export class ARManager {
         if (this.xrSession) {
             this.xrSession.end();
             this.isARActive = false;
+            console.log('AR session ended');
         }
     }
 
