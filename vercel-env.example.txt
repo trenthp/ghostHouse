@@ -1,0 +1,10 @@
+Vercel Environment Variables Configuration
+============================================
+
+For Vercel deployment, set these environment variables in your Vercel project settings:
+
+VITE_TARGET_LAT=28.4191143
+VITE_TARGET_LNG=-81.4958061
+VITE_TARGET_ADDRESS=Halloween House
+
+These will be used at build time to configure the target location for the ghost house experience.
