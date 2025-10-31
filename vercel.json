@@ -2,10 +2,5 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "devCommand": "npm run dev",
-  "installCommand": "npm install",
-  "env": {
-    "VITE_TARGET_LAT": "@target_lat",
-    "VITE_TARGET_LNG": "@target_lng",
-    "VITE_TARGET_ADDRESS": "@target_address"
-  }
+  "installCommand": "npm install"
 }
