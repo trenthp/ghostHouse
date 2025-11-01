@@ -14,70 +14,6 @@ An immersive WebXR application that displays ghosts flying around a specific hou
   - Ghost spawning mechanics
 - 🔊 **Sound Effects**: Audio feedback for interactions
 - 🎨 **Halloween Theme**: Spooky visuals and effects
-- 🔐 **Secure Location**: Address obscured in public repository using environment variables
-
-## Quick Start
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/ghostHouse.git
-cd ghostHouse
-
-# Install dependencies
-npm install
-
-# Create .env file from template
-cp .env.example .env
-
-# Edit .env with your target coordinates
-# VITE_TARGET_LAT=28.4191143
-# VITE_TARGET_LNG=-81.4958061
-# VITE_TARGET_ADDRESS=Halloween House
-```
-
-### Development
-
-```bash
-# Start dev server (runs on http://localhost:3000)
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-```
-
-## Deployment
-
-### GitHub Pages
-
-1. Build the project: `npm run build`
-2. Deploy the `dist` folder to gh-pages branch
-3. Enable GitHub Pages in repository settings
-
-### Vercel (Recommended)
-
-```bash
-# Install Vercel CLI
-npm install -g vercel
-
-# Deploy
-vercel --prod
-```
-
-Set environment variables in Vercel dashboard:
-- `VITE_TARGET_LAT`
-- `VITE_TARGET_LNG`
-- `VITE_TARGET_ADDRESS`
-
-### Bluehost
-
-1. Build: `npm run build`
-2. Upload `dist` folder contents via FTP to `public_html`
-3. Set environment variables in hosting control panel
 
 ## How to Play
 
@@ -144,17 +80,6 @@ ghostHouse/
 └── README.md               # This file
 ```
 
-## Environment Variables
-
-Create a `.env` file in the root directory:
-
-```
-VITE_TARGET_LAT=28.4191143
-VITE_TARGET_LNG=-81.4958061
-VITE_TARGET_ADDRESS=Halloween House
-```
-
-**Note**: The `.env` file is in `.gitignore` to protect sensitive location data.
 
 ## Privacy & Security
 
@@ -206,7 +131,7 @@ MIT License - feel free to use for Halloween events!
 
 ## Credits
 
-Created with ❤️ for Halloween 2024
+Created with ❤️ for Halloween 2025
 
 ---
 
