@@ -115,11 +115,35 @@ class HalloweenGhostHouse {
 
         this.uiManager.updateLocationStatus(data, isAtLocation);
 
+        // Set target location for GhostManager
+        // Calculate relative position based on direction and distance from current user position
+        const targetPosition = this.calculateTargetWorldPosition(data);
+        this.ghostManager.setTargetLocation(targetPosition);
+
         if (shouldShowGhosts && !this.ghostManager.isActive) {
             this.ghostManager.activate();
         } else if (!shouldShowGhosts && this.ghostManager.isActive) {
             this.ghostManager.deactivate();
         }
+    }
+
+    calculateTargetWorldPosition(locationData) {
+        // Convert GPS coordinates to world space relative to camera
+        // Using simple latitude/longitude to meters conversion
+        const R = 6371000; // Earth's radius in meters
+
+        // Convert lat/lng differences to meters
+        const dLat = (locationData.targetLat - locationData.currentLat) * Math.PI / 180;
+        const dLng = (locationData.targetLng - locationData.currentLng) * Math.PI / 180;
+
+        const y = dLat * R; // North-South (z in 3D)
+        const x = dLng * R * Math.cos((locationData.currentLat) * Math.PI / 180); // East-West (x in 3D)
+
+        // Place target in world space relative to camera
+        const targetPos = new THREE.Vector3(x, 0, y);
+        targetPos.add(this.camera.position); // Relative to camera position
+
+        return targetPos;
     }
 
     setupEventListeners() {

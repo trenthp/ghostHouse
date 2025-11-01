@@ -26,6 +26,10 @@ export class Ghost {
         this.rotationSpeed = 0.02;
         this.scale = 1;
 
+        // Distance-based effects
+        this.distanceToCamera = 0;
+        this.maxViewDistance = 50; // Maximum distance to see ghost
+
         // Spawning effect
         this.spawnTime = 0;
         this.spawnDuration = 0.5;
@@ -35,54 +39,57 @@ export class Ghost {
     createMesh() {
         const group = new THREE.Group();
 
-        // Ghost body - simple sphere
-        const bodyGeometry = new THREE.SphereGeometry(0.3, 16, 16);
+        // Ghost body - cone shape (like a sheet)
+        const bodyGeometry = new THREE.ConeGeometry(0.35, 0.8, 16);
         const bodyMaterial = new THREE.MeshStandardMaterial({
             color: 0xffffff,
-            emissive: 0x88ff88,
-            emissiveIntensity: 0.3,
-            roughness: 0.5,
-            metalness: 0.1
+            emissive: 0xcccccc,
+            emissiveIntensity: 0.2,
+            roughness: 0.6,
+            metalness: 0,
+            transparent: true
         });
         const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
         body.castShadow = true;
         body.receiveShadow = true;
         group.add(body);
 
-        // Ghost eyes - glow
-        const eyeGeometry = new THREE.SphereGeometry(0.08, 8, 8);
+        // Ghost eyes - black circles
+        const eyeGeometry = new THREE.SphereGeometry(0.07, 8, 8);
         const eyeMaterial = new THREE.MeshStandardMaterial({
-            color: 0xff4444,
-            emissive: 0xff0000,
-            emissiveIntensity: 0.8,
-            roughness: 0.3
+            color: 0x000000,
+            emissive: 0x000000,
+            emissiveIntensity: 0.2,
+            roughness: 0.8
         });
 
         const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-        leftEye.position.set(-0.1, 0.15, 0.25);
+        leftEye.position.set(-0.1, 0.15, 0.3);
         group.add(leftEye);
 
         const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-        rightEye.position.set(0.1, 0.15, 0.25);
+        rightEye.position.set(0.1, 0.15, 0.3);
         group.add(rightEye);
 
-        // Ghost mouth - simple indicator
-        const mouthGeometry = new THREE.BoxGeometry(0.1, 0.05, 0.05);
+        // Ghost mouth - black oval
+        const mouthGeometry = new THREE.SphereGeometry(0.06, 8, 8);
         const mouthMaterial = new THREE.MeshStandardMaterial({
-            color: 0xff0000,
-            emissive: 0xff0000,
-            emissiveIntensity: 0.5
+            color: 0x000000,
+            emissive: 0x000000,
+            emissiveIntensity: 0.1,
+            roughness: 0.8
         });
         const mouth = new THREE.Mesh(mouthGeometry, mouthMaterial);
-        mouth.position.set(0, -0.1, 0.25);
+        mouth.position.set(0, -0.05, 0.3);
+        mouth.scale.set(1.2, 0.8, 1);
         group.add(mouth);
 
-        // Ghostly aura (particle effect)
-        const auraGeometry = new THREE.SphereGeometry(0.4, 8, 8);
+        // Ghostly aura (subtle glow)
+        const auraGeometry = new THREE.SphereGeometry(0.45, 8, 8);
         const auraMaterial = new THREE.MeshBasicMaterial({
-            color: 0x88ff88,
+            color: 0xffffff,
             transparent: true,
-            opacity: 0.1,
+            opacity: 0.05,
             wireframe: false
         });
         const aura = new THREE.Mesh(auraGeometry, auraMaterial);
@@ -99,6 +106,9 @@ export class Ghost {
     }
 
     update(deltaTime, camera) {
+        // Calculate distance to camera for visual effects
+        this.distanceToCamera = this.position.distanceTo(camera.position);
+
         // Update spawning
         if (this.isSpawning) {
             this.spawnTime += deltaTime;
@@ -141,18 +151,49 @@ export class Ghost {
         this.rotation += deltaTime * this.rotationSpeed;
         this.mesh.rotation.y = this.rotation;
 
+        // Apply distance-based visual effects
+        this.updateDistanceEffects();
+
         // Update scare visual effect
         if (this.scared) {
-            this.mesh.userData.aura.material.opacity = 0.3 + 0.2 * Math.sin(deltaTime * 20);
+            this.mesh.userData.aura.material.opacity = 0.2 + 0.1 * Math.sin(deltaTime * 20);
             this.mesh.userData.eyes.forEach(eye => {
-                eye.material.emissiveIntensity = 1.2 + 0.3 * Math.sin(deltaTime * 15);
+                eye.material.emissiveIntensity = 0.5;
             });
         } else {
-            this.mesh.userData.aura.material.opacity = 0.1;
             this.mesh.userData.eyes.forEach(eye => {
-                eye.material.emissiveIntensity = 0.8;
+                eye.material.emissiveIntensity = 0.2;
             });
         }
+    }
+
+    updateDistanceEffects() {
+        // Scale ghost based on distance (smaller when far away)
+        const distanceRatio = this.distanceToCamera / this.maxViewDistance;
+        const minScale = 0.3; // Smallest scale at max distance
+        const maxScale = 1.0; // Full scale when close
+        let scaleFactor = maxScale - (distanceRatio * (maxScale - minScale));
+
+        // Apply spawn scale
+        if (this.isSpawning) {
+            scaleFactor *= this.scale;
+        }
+
+        this.mesh.scale.setScalar(scaleFactor);
+
+        // Transparency based on distance (more transparent when far away)
+        const minOpacity = 0.2; // Minimum opacity at max distance
+        const maxOpacity = 1.0; // Full opacity when close
+        const opacity = maxOpacity - (distanceRatio * (maxOpacity - minOpacity));
+
+        const body = this.mesh.userData.body;
+        if (body && body.material) {
+            body.material.opacity = opacity;
+        }
+
+        // Adjust aura opacity
+        const auraOpacity = opacity * 0.1;
+        this.mesh.userData.aura.material.opacity = auraOpacity;
     }
 
     wanderUpdate(deltaTime, camera) {
