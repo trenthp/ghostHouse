@@ -11,19 +11,23 @@ export class Ghost {
         // Movement properties
         this.velocity = new THREE.Vector3(0, 0, 0);
         this.speed = 3 + Math.random() * 2; // 3-5 m/s
+        this.approachSpeed = 1 + Math.random() * 1.5; // 1-2.5 m/s when approaching
         this.bobAmount = 0.3;
         this.bobSpeed = 1.5;
         this.bobTime = Math.random() * Math.PI * 2;
 
         // Behavior
-        this.state = 'flying'; // 'flying', 'scared', 'fleeing'
+        this.state = 'flying'; // 'flying', 'approaching', 'scared', 'fleeing'
         this.scared = false;
         this.scareTTL = 0;
         this.scareIntensity = 0;
+        this.isBeingWatchedTimeout = 0; // Counter for how long ghost was in view
 
-        // Animation
+        // Animation & Rotation
         this.rotation = 0;
         this.rotationSpeed = 0.02;
+        this.targetRotation = 0; // Target rotation when facing camera
+        this.facingCameraBlend = 0; // 0-1: blend between wandering and facing camera
         this.scale = 1;
 
         // Distance-based effects
@@ -34,6 +38,10 @@ export class Ghost {
         this.spawnTime = 0;
         this.spawnDuration = 0.5;
         this.isSpawning = true;
+
+        // View direction tracking
+        this.lastWatchedTime = 0;
+        this.watchTimeout = 1.5; // How long before ghost starts approaching (1.5 seconds)
     }
 
     createMesh() {
@@ -133,10 +141,16 @@ export class Ghost {
             }
         }
 
+        // Check if ghost is being looked at by camera
+        this.updateCameraViewTracking(camera);
+
         // Movement behavior
         if (this.state === 'flying') {
             // Gentle wander
             this.wanderUpdate(deltaTime, camera);
+        } else if (this.state === 'approaching') {
+            // Move toward camera when not being watched
+            this.approachingUpdate(deltaTime, camera);
         } else if (this.state === 'fleeing') {
             this.fleeing(deltaTime, camera);
         }
@@ -147,9 +161,8 @@ export class Ghost {
         this.mesh.position.copy(this.position);
         this.mesh.position.y += bobOffset;
 
-        // Update rotation
-        this.rotation += deltaTime * this.rotationSpeed;
-        this.mesh.rotation.y = this.rotation;
+        // Update rotation - blend between wandering and facing camera
+        this.updateRotation(deltaTime);
 
         // Apply distance-based visual effects
         this.updateDistanceEffects();
@@ -196,13 +209,78 @@ export class Ghost {
         this.mesh.userData.aura.material.opacity = auraOpacity;
     }
 
+    /**
+     * Check if the ghost is visible in the camera's view
+     * Uses a simple cone check based on camera forward direction
+     */
+    updateCameraViewTracking(camera) {
+        // Get direction from camera to ghost
+        const dirToGhost = this.position.clone().sub(camera.position);
+
+        // Get camera forward direction
+        const cameraForward = new THREE.Vector3(0, 0, -1);
+        cameraForward.applyQuaternion(camera.quaternion);
+
+        // Calculate angle between camera forward and ghost direction
+        dirToGhost.normalize();
+        const viewAngle = cameraForward.dot(dirToGhost);
+
+        // Ghost is visible if angle is > ~0.3 (roughly 70 degree cone in front)
+        const isInView = viewAngle > 0.3;
+
+        if (isInView) {
+            // Ghost is being looked at
+            this.lastWatchedTime = 0;
+
+            // Blend towards facing camera when being watched
+            this.facingCameraBlend = Math.min(this.facingCameraBlend + 0.1, 1.0);
+
+            // Keep ghost in flying/wandering state when being watched
+            if (this.state === 'approaching') {
+                this.state = 'flying';
+            }
+        } else {
+            // Ghost is not being looked at - start approaching
+            this.lastWatchedTime += 1; // Increment watch counter
+
+            // Blend away from facing camera
+            this.facingCameraBlend = Math.max(this.facingCameraBlend - 0.1, 0.0);
+
+            // After timeout, switch to approaching state
+            if (this.lastWatchedTime > this.watchTimeout && this.state === 'flying') {
+                this.state = 'approaching';
+            }
+        }
+    }
+
+    /**
+     * Update rotation to face the camera while blending with wander rotation
+     */
+    updateRotation(deltaTime) {
+        // Calculate target rotation to face camera
+        // We'll use a simple approach: rotate toward camera's direction
+
+        // Increment wander rotation
+        this.rotation += deltaTime * this.rotationSpeed;
+
+        // Apply blend between wander rotation and facing camera
+        let finalRotation = this.rotation;
+        if (this.facingCameraBlend > 0) {
+            // Smoothly blend toward target rotation
+            const rotationBlend = this.rotation * (1 - this.facingCameraBlend) + this.targetRotation * this.facingCameraBlend;
+            finalRotation = rotationBlend;
+        }
+
+        this.mesh.rotation.y = finalRotation;
+    }
+
     wanderUpdate(deltaTime, camera) {
         // Random wander in a small area
         if (Math.random() < 0.01) {
             const angle = Math.random() * Math.PI * 2;
             const distance = 5 + Math.random() * 10;
-            this.targetPosition.x = Math.cos(angle) * distance;
-            this.targetPosition.z = Math.sin(angle) * distance;
+            this.targetPosition.x = this.position.x + Math.cos(angle) * distance;
+            this.targetPosition.z = this.position.z + Math.sin(angle) * distance;
             this.targetPosition.y = 0.5 + Math.random() * 2;
         }
 
@@ -211,6 +289,29 @@ export class Ghost {
         if (direction.length() > 0.5) {
             direction.normalize();
             this.position.add(direction.multiplyScalar(deltaTime * this.speed));
+        }
+    }
+
+    /**
+     * Approach the camera when not being watched
+     * Ghost moves toward the user at a slower, more deliberate pace
+     */
+    approachingUpdate(deltaTime, camera) {
+        // Move directly toward camera
+        const direction = camera.position.clone().sub(this.position);
+        const distance = direction.length();
+
+        // Stop approaching when very close to camera (minimum 2 meters)
+        if (distance > 2) {
+            direction.normalize();
+            this.position.add(direction.multiplyScalar(deltaTime * this.approachSpeed));
+
+            // Increase rotation speed when approaching for eerie effect
+            this.rotationSpeed = 0.08;
+        } else {
+            // Very close - return to flying state
+            this.state = 'flying';
+            this.lastWatchedTime = 0;
         }
     }
 
