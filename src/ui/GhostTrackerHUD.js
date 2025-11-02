@@ -191,9 +191,12 @@ export class GhostTrackerHUD {
             const proximityRatio = Math.min(distance / this.maxTrackedDistance, 1);
             const intensity = 1 - proximityRatio;
             const rgb = cfg.INDICATOR_COLOR_RGB;
-            element.style.borderColor = `rgba(${rgb}, ${0.5 + intensity * 0.5})`;
-            element.style.boxShadow = `0 0 ${cfg.GLOW_BLUR_MIN + intensity * (cfg.GLOW_BLUR_MAX - cfg.GLOW_BLUR_MIN)}px rgba(${rgb}, ${0.5 + intensity * 0.5}), inset 0 0 10px rgba(${rgb}, 0.3)`;
-            element.style.background = `rgba(${rgb}, ${cfg.INDICATOR_OPACITY_MIN + intensity * (cfg.INDICATOR_OPACITY_MAX - cfg.INDICATOR_OPACITY_MIN)})`;
+            const opacity = cfg.INDICATOR_OPACITY_MIN + intensity * (cfg.INDICATOR_OPACITY_MAX - cfg.INDICATOR_OPACITY_MIN);
+            const glowSize = cfg.GLOW_BLUR_MIN + intensity * (cfg.GLOW_BLUR_MAX - cfg.GLOW_BLUR_MIN);
+            const shadowOpacity = 0.5 + intensity * 0.5;
+
+            // Batch style updates to minimize repaints
+            element.style.cssText = `border-color: rgba(${rgb}, ${shadowOpacity}); box-shadow: 0 0 ${glowSize}px rgba(${rgb}, ${shadowOpacity}), inset 0 0 10px rgba(${rgb}, 0.3); background: rgba(${rgb}, ${opacity});`;
         });
 
         // Remove indicators for ghosts no longer creeping

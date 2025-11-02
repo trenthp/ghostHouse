@@ -90,12 +90,15 @@ export class UIManager {
                 this.comboDisplay.textContent = `${comboCount}x`;
                 this.comboDisplay.style.display = 'block';
 
-                // Trigger pulse animation using CSS classes (cleaner than setTimeout)
+                // Trigger pulse animation using CSS classes
                 // Remove animation class to reset, then re-add to retrigger
                 this.comboDisplay.classList.remove('pulse-combo');
-                // Force browser to recognize the class removal via reflow
-                void this.comboDisplay.offsetWidth;
-                this.comboDisplay.classList.add('pulse-combo');
+
+                // Use requestAnimationFrame to avoid synchronous reflow stalls
+                // This is much more efficient than void offsetWidth
+                requestAnimationFrame(() => {
+                    this.comboDisplay.classList.add('pulse-combo');
+                });
             }
             if (this.comboLabel) {
                 this.comboLabel.style.display = 'block';
