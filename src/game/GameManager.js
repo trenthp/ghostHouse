@@ -1,9 +1,16 @@
+// Game configuration constants
+const GAME_CONFIG = {
+    COMBO_RESET_TIMEOUT: 5, // seconds before combo resets
+    SCORE_PER_SCARE: 1, // points earned per ghost scare
+    LOCALSTORAGE_KEY: 'ghostHouseHighScore', // localStorage key for high score
+};
+
 export class GameManager {
     constructor() {
         this.scaresCount = 0;
         this.currentCombo = 0;
-        this.highScore = localStorage.getItem('ghostHouseHighScore') || 0;
-        this.comboResetTimer = 5; // seconds
+        this.highScore = this._loadHighScore();
+        this.comboResetTimer = GAME_CONFIG.COMBO_RESET_TIMEOUT;
         this.comboResetTTL = 0;
 
         this.stats = {
@@ -13,8 +20,26 @@ export class GameManager {
         };
     }
 
+    _loadHighScore() {
+        try {
+            const stored = localStorage.getItem(GAME_CONFIG.LOCALSTORAGE_KEY);
+            return stored ? parseInt(stored, 10) : 0;
+        } catch (e) {
+            console.warn('Could not load high score from localStorage:', e.message);
+            return 0;
+        }
+    }
+
+    _saveHighScore() {
+        try {
+            localStorage.setItem(GAME_CONFIG.LOCALSTORAGE_KEY, this.highScore);
+        } catch (e) {
+            console.warn('Could not save high score to localStorage:', e.message);
+        }
+    }
+
     onGhostScared() {
-        this.scaresCount++;
+        this.scaresCount += GAME_CONFIG.SCORE_PER_SCARE;
 
         // Combo system
         this.currentCombo++;
@@ -24,7 +49,7 @@ export class GameManager {
         const currentScore = this.scaresCount;
         if (currentScore > this.highScore) {
             this.highScore = currentScore;
-            localStorage.setItem('ghostHouseHighScore', this.highScore);
+            this._saveHighScore();
         }
 
         this.updateStats();

@@ -1,6 +1,24 @@
 import * as THREE from 'three';
 import { Ghost } from './Ghost.js';
 
+// Ghost Manager configuration constants
+const GHOST_MANAGER_CONFIG = {
+    // Spawning
+    MAX_GHOSTS: 8, // Maximum concurrent ghosts (reduced from 15 for performance)
+    SPAWN_RATE: 2, // seconds between ghost spawns
+    SPAWN_HEIGHT_BASE: 0.5, // base height for ghost spawning
+    SPAWN_HEIGHT_VARIANCE: 3, // additional random height variance
+
+    // Spawn distance
+    SPAWN_RADIUS: 20, // 20 meters radius
+    MIN_SPAWN_DISTANCE: 8, // Minimum 8 meters from camera (safety distance)
+    MAX_SPAWN_DISTANCE: 20, // Maximum 20 meters from camera
+    SPAWN_POSITION_ATTEMPTS: 10, // Max attempts to find valid spawn position
+
+    // Visibility
+    VISIBILITY_RADIUS: 50, // meters - remove ghosts beyond this distance from target
+};
+
 export class GhostManager {
     constructor(scene, gameManager, audioManager) {
         this.scene = scene;
@@ -9,15 +27,15 @@ export class GhostManager {
 
         this.ghosts = [];
         this.isActive = false;
-        this.maxGhosts = 8; // Reduced from 15 for better performance and cleaner experience
-        this.spawnRate = 2; // seconds between spawns
+        this.maxGhosts = GHOST_MANAGER_CONFIG.MAX_GHOSTS;
+        this.spawnRate = GHOST_MANAGER_CONFIG.SPAWN_RATE;
         this.spawnTimer = 0;
 
         // Spawn area - relative to target location
-        this.spawnRadius = 20; // 20 meters radius
-        this.minSpawnDistance = 8; // Minimum 8 meters from camera (safe distance)
-        this.maxSpawnDistance = 20; // Maximum 20 meters from camera
-        this.spawnHeight = 0.5;
+        this.spawnRadius = GHOST_MANAGER_CONFIG.SPAWN_RADIUS;
+        this.minSpawnDistance = GHOST_MANAGER_CONFIG.MIN_SPAWN_DISTANCE;
+        this.maxSpawnDistance = GHOST_MANAGER_CONFIG.MAX_SPAWN_DISTANCE;
+        this.spawnHeight = GHOST_MANAGER_CONFIG.SPAWN_HEIGHT_BASE;
 
         // Target location for spawning
         this.targetLocationPosition = new THREE.Vector3(0, 0, 0); // Will be set dynamically
@@ -67,9 +85,9 @@ export class GhostManager {
                 creepingGhostCount++;
             }
 
-            // Remove ghosts that are too far away from the target location (50 meter visibility radius)
+            // Remove ghosts that are too far away from the target location
             const distToTargetLocation = ghost.getPosition().distanceTo(this.targetLocationPosition);
-            if (distToTargetLocation > 50) {
+            if (distToTargetLocation > GHOST_MANAGER_CONFIG.VISIBILITY_RADIUS) {
                 ghost.remove();
                 this.ghosts.splice(i, 1);
             }
@@ -84,15 +102,15 @@ export class GhostManager {
      * Ghosts spawn between minSpawnDistance and maxSpawnDistance from the user
      */
     spawnGhost(camera) {
+        const cfg = GHOST_MANAGER_CONFIG;
         let position = null;
         let attempts = 0;
-        const maxAttempts = 10;
 
         // Try to find a safe spawn position
-        while (attempts < maxAttempts) {
+        while (attempts < cfg.SPAWN_POSITION_ATTEMPTS) {
             const angle = Math.random() * Math.PI * 2;
             const distance = this.minSpawnDistance + Math.random() * (this.maxSpawnDistance - this.minSpawnDistance);
-            const height = this.spawnHeight + Math.random() * 3;
+            const height = this.spawnHeight + Math.random() * cfg.SPAWN_HEIGHT_VARIANCE;
 
             position = new THREE.Vector3(
                 this.targetLocationPosition.x + Math.cos(angle) * distance,
@@ -114,7 +132,7 @@ export class GhostManager {
         if (position === null) {
             const angle = Math.random() * Math.PI * 2;
             const distance = this.minSpawnDistance + Math.random() * (this.maxSpawnDistance - this.minSpawnDistance);
-            const height = this.spawnHeight + Math.random() * 3;
+            const height = this.spawnHeight + Math.random() * cfg.SPAWN_HEIGHT_VARIANCE;
             position = new THREE.Vector3(
                 this.targetLocationPosition.x + Math.cos(angle) * distance,
                 height,

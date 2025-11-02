@@ -1,5 +1,28 @@
 import * as THREE from 'three';
 
+// Ghost Tracker HUD configuration constants
+const HUD_CONFIG = {
+    // Visual
+    INDICATOR_SIZE: 40, // pixels
+    EDGE_PADDING: 10, // pixels from viewport edge
+    EDGE_HEIGHT: 50, // pixels
+    EDGE_WIDTH: 50, // pixels
+    MAX_TRACKED_DISTANCE: 50, // meters
+
+    // Colors
+    INDICATOR_COLOR_RGB: '255, 107, 53', // Orange/red (#ff6b35)
+    INDICATOR_BORDER_WIDTH: 2,
+    INDICATOR_OPACITY_MIN: 0.1,
+    INDICATOR_OPACITY_MAX: 0.15,
+    GLOW_BLUR_MIN: 10,
+    GLOW_BLUR_MAX: 25,
+
+    // Animation
+    PULSE_DURATION: '1s',
+    DISTANCE_LABEL_OFFSET: -20, // pixels below indicator
+    DISTANCE_LABEL_FONT_SIZE: 10, // pixels
+};
+
 /**
  * Ghost Tracker HUD System
  * Displays indicators around the viewport edge showing direction and proximity of creeping ghosts
@@ -12,9 +35,9 @@ export class GhostTrackerHUD {
         this.radarElement = null;
         this.isActive = false;
 
-        this.indicatorSize = 40; // Size of tracker indicator in pixels
-        this.edgePadding = 10; // Distance from viewport edge
-        this.maxTrackedDistance = 50; // Maximum distance to show on radar
+        this.indicatorSize = HUD_CONFIG.INDICATOR_SIZE;
+        this.edgePadding = HUD_CONFIG.EDGE_PADDING;
+        this.maxTrackedDistance = HUD_CONFIG.MAX_TRACKED_DISTANCE;
 
         this.init();
     }
@@ -53,51 +76,14 @@ export class GhostTrackerHUD {
     }
 
     getEdgeStyle(edge) {
-        const baseStyle = `
-            position: fixed;
-            pointer-events: none;
-            z-index: 100;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-        `;
+        const base = `position: fixed; pointer-events: none; z-index: 100; display: flex; justify-content: center; align-items: center; gap: 8px;`;
+        const padding = this.edgePadding;
 
         const edgeStyles = {
-            top: `
-                ${baseStyle}
-                top: ${this.edgePadding}px;
-                left: 50%;
-                transform: translateX(-50%);
-                height: 50px;
-                width: 100%;
-            `,
-            bottom: `
-                ${baseStyle}
-                bottom: ${this.edgePadding}px;
-                left: 50%;
-                transform: translateX(-50%);
-                height: 50px;
-                width: 100%;
-            `,
-            left: `
-                ${baseStyle}
-                flex-direction: column;
-                left: ${this.edgePadding}px;
-                top: 50%;
-                transform: translateY(-50%);
-                width: 50px;
-                height: 100%;
-            `,
-            right: `
-                ${baseStyle}
-                flex-direction: column;
-                right: ${this.edgePadding}px;
-                top: 50%;
-                transform: translateY(-50%);
-                width: 50px;
-                height: 100%;
-            `
+            top: `${base} top: ${padding}px; left: 50%; transform: translateX(-50%); height: 50px; width: 100%;`,
+            bottom: `${base} bottom: ${padding}px; left: 50%; transform: translateX(-50%); height: 50px; width: 100%;`,
+            left: `${base} flex-direction: column; left: ${padding}px; top: 50%; transform: translateY(-50%); width: 50px; height: 100%;`,
+            right: `${base} flex-direction: column; right: ${padding}px; top: 50%; transform: translateY(-50%); width: 50px; height: 100%;`
         };
 
         return edgeStyles[edge];
@@ -107,6 +93,7 @@ export class GhostTrackerHUD {
      * Create a visual indicator for a creeping ghost
      */
     createIndicator(ghostId) {
+        const cfg = HUD_CONFIG;
         const indicator = document.createElement('div');
         indicator.className = 'ghost-tracker-indicator';
         indicator.id = `indicator-${ghostId}`;
@@ -114,17 +101,17 @@ export class GhostTrackerHUD {
             position: fixed;
             width: ${this.indicatorSize}px;
             height: ${this.indicatorSize}px;
-            border: 2px solid #ff6b35;
+            border: ${cfg.INDICATOR_BORDER_WIDTH}px solid rgb(${cfg.INDICATOR_COLOR_RGB});
             border-radius: 50%;
-            background: rgba(255, 107, 53, 0.1);
+            background: rgba(${cfg.INDICATOR_COLOR_RGB}, 0.1);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 20px;
             z-index: 101;
             pointer-events: none;
-            box-shadow: 0 0 10px rgba(255, 107, 53, 0.5), inset 0 0 10px rgba(255, 107, 53, 0.3);
-            animation: pulse-indicator 1s ease-in-out infinite;
+            box-shadow: 0 0 ${cfg.GLOW_BLUR_MIN}px rgba(${cfg.INDICATOR_COLOR_RGB}, 0.5), inset 0 0 10px rgba(${cfg.INDICATOR_COLOR_RGB}, 0.3);
+            animation: pulse-indicator ${cfg.PULSE_DURATION} ease-in-out infinite;
         `;
 
         // Add ghost emoji
@@ -132,7 +119,7 @@ export class GhostTrackerHUD {
         ghostEmoji.textContent = '👻';
         ghostEmoji.style.cssText = `
             font-size: 18px;
-            filter: drop-shadow(0 0 4px rgba(255, 107, 53, 0.8));
+            filter: drop-shadow(0 0 4px rgba(${cfg.INDICATOR_COLOR_RGB}, 0.8));
         `;
         indicator.appendChild(ghostEmoji);
 
@@ -141,11 +128,11 @@ export class GhostTrackerHUD {
         distanceLabel.className = 'distance-label';
         distanceLabel.style.cssText = `
             position: absolute;
-            bottom: -20px;
+            bottom: ${cfg.DISTANCE_LABEL_OFFSET}px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 10px;
-            color: #ff6b35;
+            font-size: ${cfg.DISTANCE_LABEL_FONT_SIZE}px;
+            color: rgb(${cfg.INDICATOR_COLOR_RGB});
             font-weight: bold;
             white-space: nowrap;
             text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
@@ -200,11 +187,13 @@ export class GhostTrackerHUD {
             distanceLabel.textContent = `${distanceM}m`;
 
             // Update indicator color based on proximity
+            const cfg = HUD_CONFIG;
             const proximityRatio = Math.min(distance / this.maxTrackedDistance, 1);
             const intensity = 1 - proximityRatio;
-            element.style.borderColor = `rgba(255, 107, 53, ${0.5 + intensity * 0.5})`;
-            element.style.boxShadow = `0 0 ${10 + intensity * 15}px rgba(255, 107, 53, ${0.5 + intensity * 0.5}), inset 0 0 10px rgba(255, 107, 53, 0.3)`;
-            element.style.background = `rgba(255, 107, 53, ${0.05 + intensity * 0.15})`;
+            const rgb = cfg.INDICATOR_COLOR_RGB;
+            element.style.borderColor = `rgba(${rgb}, ${0.5 + intensity * 0.5})`;
+            element.style.boxShadow = `0 0 ${cfg.GLOW_BLUR_MIN + intensity * (cfg.GLOW_BLUR_MAX - cfg.GLOW_BLUR_MIN)}px rgba(${rgb}, ${0.5 + intensity * 0.5}), inset 0 0 10px rgba(${rgb}, 0.3)`;
+            element.style.background = `rgba(${rgb}, ${cfg.INDICATOR_OPACITY_MIN + intensity * (cfg.INDICATOR_OPACITY_MAX - cfg.INDICATOR_OPACITY_MIN)})`;
         });
 
         // Remove indicators for ghosts no longer creeping
@@ -239,8 +228,17 @@ export class GhostTrackerHUD {
         const up = direction.clone().dot(cameraUp);
 
         // Calculate screen coordinates (center is 0,0)
-        let screenX = (right / forward) * (viewportWidth / 2);
-        let screenY = -(up / forward) * (viewportHeight / 2);
+        // Avoid division by zero - if forward is too small, ghost is behind camera
+        let screenX = 0;
+        let screenY = 0;
+        if (Math.abs(forward) > 0.01) {
+            screenX = (right / forward) * (viewportWidth / 2);
+            screenY = -(up / forward) * (viewportHeight / 2);
+        } else {
+            // Ghost is behind camera, put indicator at center
+            screenX = 0;
+            screenY = 0;
+        }
 
         // Clamp to viewport edges with padding
         const padding = this.edgePadding + this.indicatorSize / 2;
@@ -269,6 +267,8 @@ export class GhostTrackerHUD {
             return;
         }
 
+        const cfg = HUD_CONFIG;
+        const rgb = cfg.INDICATOR_COLOR_RGB;
         const style = document.createElement('style');
         style.id = 'ghost-tracker-styles';
         style.textContent = `
@@ -286,30 +286,30 @@ export class GhostTrackerHUD {
 
             @keyframes edge-glow {
                 0%, 100% {
-                    border-color: rgba(255, 107, 53, 0.3);
+                    border-color: rgba(${rgb}, 0.3);
                 }
                 50% {
-                    border-color: rgba(255, 107, 53, 0.8);
+                    border-color: rgba(${rgb}, 0.8);
                 }
             }
 
             .ghost-tracker-edge {
-                border-top: 2px solid rgba(255, 107, 53, 0.3);
-                border-bottom: 2px solid rgba(255, 107, 53, 0.3);
+                border-top: 2px solid rgba(${rgb}, 0.3);
+                border-bottom: 2px solid rgba(${rgb}, 0.3);
             }
 
             .ghost-tracker-top, .ghost-tracker-bottom {
-                border-left: 1px solid rgba(255, 107, 53, 0.2);
-                border-right: 1px solid rgba(255, 107, 53, 0.2);
+                border-left: 1px solid rgba(${rgb}, 0.2);
+                border-right: 1px solid rgba(${rgb}, 0.2);
             }
 
             .ghost-tracker-left, .ghost-tracker-right {
-                border-top: 1px solid rgba(255, 107, 53, 0.2);
-                border-bottom: 1px solid rgba(255, 107, 53, 0.2);
+                border-top: 1px solid rgba(${rgb}, 0.2);
+                border-bottom: 1px solid rgba(${rgb}, 0.2);
             }
 
             .ghost-tracker-indicator:hover {
-                box-shadow: 0 0 20px rgba(255, 107, 53, 0.8), inset 0 0 15px rgba(255, 107, 53, 0.6) !important;
+                box-shadow: 0 0 20px rgba(${rgb}, 0.8), inset 0 0 15px rgba(${rgb}, 0.6) !important;
             }
         `;
         document.head.appendChild(style);

@@ -1,5 +1,60 @@
 import * as THREE from 'three';
 
+// Ghost configuration constants
+const GHOST_CONFIG = {
+    // Movement speeds (m/s)
+    HOVER_SPEED_MIN: 0.5,
+    HOVER_SPEED_MAX: 1.0,
+    CREEP_SPEED_MIN: 0.3,
+    CREEP_SPEED_MAX: 0.5,
+    FLEE_SPEED_MIN: 3.0,
+    FLEE_SPEED_MAX: 4.0,
+
+    // Animation
+    BOB_AMOUNT: 0.3,
+    BOB_SPEED: 1.5,
+    ROTATION_SPEED_HOVER: 0.02,
+    ROTATION_SPEED_CREEP: 0.04,
+    ROTATION_SPEED_FLEE: 0.1,
+
+    // Visual
+    MAX_VIEW_DISTANCE: 50, // meters
+    SPAWN_DURATION: 0.5, // seconds
+    SCARE_DURATION: 0.5, // seconds
+    CREEP_START_DELAY: 0.5, // seconds before ghost starts creeping when out of view
+
+    // Distance effects
+    MIN_SCALE: 0.3,
+    MAX_SCALE: 1.0,
+    MIN_OPACITY: 0.2,
+    MAX_OPACITY: 1.0,
+
+    // Mesh sizes
+    BODY_RADIUS: 0.35,
+    BODY_HEIGHT: 0.8,
+    EYE_RADIUS: 0.07,
+    MOUTH_RADIUS: 0.06,
+    AURA_RADIUS: 0.45,
+
+    // Eye positions
+    EYE_LEFT_X: -0.1,
+    EYE_RIGHT_X: 0.1,
+    EYE_Y: 0.15,
+    EYE_Z: 0.3,
+
+    // Mouth position
+    MOUTH_Y: -0.05,
+    MOUTH_Z: 0.3,
+    MOUTH_SCALE_X: 1.2,
+    MOUTH_SCALE_Y: 0.8,
+
+    // Camera view detection
+    VIEW_CONE_THRESHOLD: 0.3, // ~70 degree cone
+    CREEP_SAFETY_DISTANCE: 2, // meters - stop creeping when this close
+    HOVER_RADIUS_MIN: 1,
+    HOVER_RADIUS_MAX: 3
+};
+
 export class Ghost {
     constructor(position, id = 0) {
         this.id = id;
@@ -11,10 +66,11 @@ export class Ghost {
 
         // Movement properties
         this.velocity = new THREE.Vector3(0, 0, 0);
-        this.hoverSpeed = 0.5 + Math.random() * 0.5; // 0.5-1.0 m/s hovering in small area
-        this.creepSpeed = 0.3 + Math.random() * 0.2; // 0.3-0.5 m/s when creeping toward user
-        this.bobAmount = 0.3;
-        this.bobSpeed = 1.5;
+        this.hoverSpeed = GHOST_CONFIG.HOVER_SPEED_MIN + Math.random() * (GHOST_CONFIG.HOVER_SPEED_MAX - GHOST_CONFIG.HOVER_SPEED_MIN);
+        this.creepSpeed = GHOST_CONFIG.CREEP_SPEED_MIN + Math.random() * (GHOST_CONFIG.CREEP_SPEED_MAX - GHOST_CONFIG.CREEP_SPEED_MIN);
+        this.fleeSpeed = GHOST_CONFIG.FLEE_SPEED_MIN + Math.random() * (GHOST_CONFIG.FLEE_SPEED_MAX - GHOST_CONFIG.FLEE_SPEED_MIN);
+        this.bobAmount = GHOST_CONFIG.BOB_AMOUNT;
+        this.bobSpeed = GHOST_CONFIG.BOB_SPEED;
         this.bobTime = Math.random() * Math.PI * 2;
 
         // Behavior
@@ -25,32 +81,37 @@ export class Ghost {
 
         // Animation & Rotation
         this.rotation = 0;
-        this.rotationSpeed = 0.02;
+        this.rotationSpeed = GHOST_CONFIG.ROTATION_SPEED_HOVER;
         this.targetRotation = 0; // Target rotation when facing camera
         this.facingCameraBlend = 0; // 0-1: blend between wandering and facing camera
         this.scale = 1;
 
         // Distance-based effects
         this.distanceToCamera = 0;
-        this.maxViewDistance = 50; // Maximum distance to see ghost
+        this.maxViewDistance = GHOST_CONFIG.MAX_VIEW_DISTANCE;
 
         // Spawning effect
         this.spawnTime = 0;
-        this.spawnDuration = 0.5;
+        this.spawnDuration = GHOST_CONFIG.SPAWN_DURATION;
         this.isSpawning = true;
 
         // View direction tracking
         this.isInViewport = false;
         this.creepingAudioPlaying = false;
         this.outOfViewTimer = 0;
-        this.creepStartDelay = 0.5; // Delay before starting to creep (0.5 seconds)
+        this.creepStartDelay = GHOST_CONFIG.CREEP_START_DELAY;
+
+        // Hover target selection - use timer instead of probability
+        this.hoverTargetTimer = 0;
+        this.hoverTargetInterval = 0.2; // seconds - select new target every 200ms
     }
 
     createMesh() {
         const group = new THREE.Group();
+        const cfg = GHOST_CONFIG;
 
         // Ghost body - cone shape (like a sheet)
-        const bodyGeometry = new THREE.ConeGeometry(0.35, 0.8, 16);
+        const bodyGeometry = new THREE.ConeGeometry(cfg.BODY_RADIUS, cfg.BODY_HEIGHT, 16);
         const bodyMaterial = new THREE.MeshStandardMaterial({
             color: 0xffffff,
             emissive: 0xcccccc,
@@ -64,38 +125,34 @@ export class Ghost {
         body.receiveShadow = true;
         group.add(body);
 
-        // Ghost eyes - black circles
-        const eyeGeometry = new THREE.SphereGeometry(0.07, 8, 8);
-        const eyeMaterial = new THREE.MeshStandardMaterial({
+        // Create shared eye and mouth materials to reduce memory usage
+        const featureMaterial = new THREE.MeshStandardMaterial({
             color: 0x000000,
             emissive: 0x000000,
             emissiveIntensity: 0.2,
             roughness: 0.8
         });
 
-        const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-        leftEye.position.set(-0.1, 0.15, 0.3);
+        // Ghost eyes - black circles
+        const eyeGeometry = new THREE.SphereGeometry(cfg.EYE_RADIUS, 8, 8);
+
+        const leftEye = new THREE.Mesh(eyeGeometry, featureMaterial);
+        leftEye.position.set(cfg.EYE_LEFT_X, cfg.EYE_Y, cfg.EYE_Z);
         group.add(leftEye);
 
-        const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-        rightEye.position.set(0.1, 0.15, 0.3);
+        const rightEye = new THREE.Mesh(eyeGeometry, featureMaterial);
+        rightEye.position.set(cfg.EYE_RIGHT_X, cfg.EYE_Y, cfg.EYE_Z);
         group.add(rightEye);
 
         // Ghost mouth - black oval
-        const mouthGeometry = new THREE.SphereGeometry(0.06, 8, 8);
-        const mouthMaterial = new THREE.MeshStandardMaterial({
-            color: 0x000000,
-            emissive: 0x000000,
-            emissiveIntensity: 0.1,
-            roughness: 0.8
-        });
-        const mouth = new THREE.Mesh(mouthGeometry, mouthMaterial);
-        mouth.position.set(0, -0.05, 0.3);
-        mouth.scale.set(1.2, 0.8, 1);
+        const mouthGeometry = new THREE.SphereGeometry(cfg.MOUTH_RADIUS, 8, 8);
+        const mouth = new THREE.Mesh(mouthGeometry, featureMaterial);
+        mouth.position.set(0, cfg.MOUTH_Y, cfg.MOUTH_Z);
+        mouth.scale.set(cfg.MOUTH_SCALE_X, cfg.MOUTH_SCALE_Y, 1);
         group.add(mouth);
 
         // Ghostly aura (subtle glow)
-        const auraGeometry = new THREE.SphereGeometry(0.45, 8, 8);
+        const auraGeometry = new THREE.SphereGeometry(cfg.AURA_RADIUS, 8, 8);
         const auraMaterial = new THREE.MeshBasicMaterial({
             color: 0xffffff,
             transparent: true,
@@ -139,7 +196,7 @@ export class Ghost {
 
             if (this.scareTTL <= 0) {
                 this.scared = false;
-                this.state = 'flying';
+                this.state = 'hovering';
             }
         }
 
@@ -183,10 +240,11 @@ export class Ghost {
     }
 
     updateDistanceEffects() {
+        const cfg = GHOST_CONFIG;
         // Scale ghost based on distance (smaller when far away)
         const distanceRatio = this.distanceToCamera / this.maxViewDistance;
-        const minScale = 0.3; // Smallest scale at max distance
-        const maxScale = 1.0; // Full scale when close
+        const minScale = cfg.MIN_SCALE;
+        const maxScale = cfg.MAX_SCALE;
         let scaleFactor = maxScale - (distanceRatio * (maxScale - minScale));
 
         // Apply spawn scale
@@ -197,8 +255,8 @@ export class Ghost {
         this.mesh.scale.setScalar(scaleFactor);
 
         // Transparency based on distance (more transparent when far away)
-        const minOpacity = 0.2; // Minimum opacity at max distance
-        const maxOpacity = 1.0; // Full opacity when close
+        const minOpacity = cfg.MIN_OPACITY;
+        const maxOpacity = cfg.MAX_OPACITY;
         const opacity = maxOpacity - (distanceRatio * (maxOpacity - minOpacity));
 
         const body = this.mesh.userData.body;
@@ -216,6 +274,7 @@ export class Ghost {
      * Uses a simple cone check based on camera forward direction
      */
     updateCameraViewTracking(camera) {
+        const cfg = GHOST_CONFIG;
         // Get direction from camera to ghost
         const dirToGhost = this.position.clone().sub(camera.position);
 
@@ -227,8 +286,8 @@ export class Ghost {
         dirToGhost.normalize();
         const viewAngle = cameraForward.dot(dirToGhost);
 
-        // Ghost is visible if angle is > ~0.3 (roughly 70 degree cone in front)
-        this.isInViewport = viewAngle > 0.3;
+        // Ghost is visible if angle is > threshold (roughly 70 degree cone in front)
+        this.isInViewport = viewAngle > cfg.VIEW_CONE_THRESHOLD;
 
         if (this.isInViewport) {
             // Ghost is in viewport - stay hovering
@@ -244,11 +303,11 @@ export class Ghost {
             }
         } else {
             // Ghost is out of viewport
-            this.outOfViewTimer += 1; // Increment out-of-view counter (counts frames, ~60 per second)
+            this.outOfViewTimer += deltaTime; // Use delta-time (frame-rate independent)
             this.facingCameraBlend = Math.max(this.facingCameraBlend - 0.1, 0.0);
 
-            // Switch to creeping after delay
-            if (this.outOfViewTimer > (this.creepStartDelay * 60) && this.state === 'hovering') {
+            // Switch to creeping after delay (frame-rate independent)
+            if (this.outOfViewTimer >= this.creepStartDelay && this.state === 'hovering') {
                 this.state = 'creeping';
             }
         }
@@ -280,10 +339,14 @@ export class Ghost {
      * Ghost gently floats back and forth in a confined space
      */
     hoveringUpdate(deltaTime, camera) {
-        // Occasionally pick a new small hover target
-        if (Math.random() < 0.005) {
+        const cfg = GHOST_CONFIG;
+
+        // Pick a new small hover target on timer (frame-rate independent)
+        this.hoverTargetTimer += deltaTime;
+        if (this.hoverTargetTimer >= this.hoverTargetInterval) {
+            this.hoverTargetTimer = 0;
             const angle = Math.random() * Math.PI * 2;
-            const distance = 1 + Math.random() * 2; // Only 1-3 meters from hover center
+            const distance = cfg.HOVER_RADIUS_MIN + Math.random() * (cfg.HOVER_RADIUS_MAX - cfg.HOVER_RADIUS_MIN);
             this.targetPosition.x = this.hoverCenter.x + Math.cos(angle) * distance;
             this.targetPosition.z = this.hoverCenter.z + Math.sin(angle) * distance;
             this.targetPosition.y = this.hoverCenter.y + (Math.random() - 0.5) * 1; // Small vertical movement
@@ -297,7 +360,7 @@ export class Ghost {
         }
 
         // Gentle rotation while hovering
-        this.rotationSpeed = 0.02;
+        this.rotationSpeed = cfg.ROTATION_SPEED_HOVER;
     }
 
     /**
@@ -305,17 +368,18 @@ export class Ghost {
      * Ghost moves deliberately and ominously, with eerie sound
      */
     creepingUpdate(deltaTime, camera) {
+        const cfg = GHOST_CONFIG;
         // Move slowly and deliberately toward camera
         const direction = camera.position.clone().sub(this.position);
         const distance = direction.length();
 
-        // Stop creeping when very close to camera (2 meter safety distance)
-        if (distance > 2) {
+        // Stop creeping when very close to camera (safety distance)
+        if (distance > cfg.CREEP_SAFETY_DISTANCE) {
             direction.normalize();
             this.position.add(direction.multiplyScalar(deltaTime * this.creepSpeed));
 
             // Slightly increase rotation speed when creeping for unsettling effect
-            this.rotationSpeed = 0.04;
+            this.rotationSpeed = cfg.ROTATION_SPEED_CREEP;
         } else {
             // Very close - return to hovering state
             this.state = 'hovering';
@@ -325,18 +389,19 @@ export class Ghost {
     }
 
     fleeing(deltaTime, camera) {
-        // Run away from click position
+        const cfg = GHOST_CONFIG;
+        // Run away from camera position
         const direction = this.position.clone().sub(camera.position);
         direction.normalize();
-        this.position.add(direction.multiplyScalar(deltaTime * this.speed * 2));
+        this.position.add(direction.multiplyScalar(deltaTime * this.fleeSpeed));
 
         // Rotate away frantically
-        this.rotationSpeed = 0.1;
+        this.rotationSpeed = cfg.ROTATION_SPEED_FLEE;
     }
 
     scare() {
         this.scared = true;
-        this.scareTTL = 0.5;
+        this.scareTTL = GHOST_CONFIG.SCARE_DURATION;
         this.state = 'fleeing';
     }
 

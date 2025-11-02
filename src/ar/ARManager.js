@@ -1,5 +1,47 @@
 import * as THREE from 'three';
 
+// AR configuration constants
+const AR_CONFIG = {
+    // UI
+    BUTTON_TEXT: '📷 Start AR',
+    BUTTON_TOP: '80px',
+    BUTTON_RIGHT: '20px',
+    BUTTON_PADDING: '12px 20px',
+    BUTTON_COLOR: '#ff6b35',
+    BUTTON_BORDER_RADIUS: '8px',
+    BUTTON_FONT_SIZE: '14px',
+    BUTTON_Z_INDEX: 150,
+
+    // Modal
+    MODAL_MAX_WIDTH: '400px',
+    MODAL_PADDING: '24px',
+    MODAL_BORDER_RADIUS: '12px',
+    MODAL_BG_COLOR: '#1a1a2e',
+    MODAL_TEXT_COLOR: 'white',
+    MODAL_Z_INDEX: 1000,
+    MODAL_BORDER_COLOR: 'rgba(255, 255, 255, 0.1)',
+    MODAL_OVERLAY_BG: 'rgba(0, 0, 0, 0.7)',
+
+    // Button sizes
+    BUTTON_PADDING_VERTICAL: '10px',
+    BUTTON_PADDING_HORIZONTAL: '16px',
+    BUTTON_BORDER_RADIUS_SMALL: '6px',
+    BUTTON_FONT_SIZE_SMALL: '14px',
+
+    // Permission messages
+    PERMISSION_TITLE_NOT_SUPPORTED: 'AR Not Supported',
+    PERMISSION_MSG_NOT_SUPPORTED: 'AR is not available on your device. Please ensure you have a compatible device with AR capabilities.',
+    PERMISSION_TITLE_CAMERA: 'Camera Access Required',
+    PERMISSION_MSG_CAMERA: 'To experience the spooky haunted house in AR, we need access to your camera. Your location may also be used to show ghosts near the target house. We do not store or share your data.',
+    PERMISSION_TITLE_DENIED: 'Permission Denied',
+    PERMISSION_MSG_DENIED: 'AR access was not granted. Please enable camera permissions in your device settings and try again.',
+
+    // Buttons
+    BUTTON_TEXT_CONTINUE: 'Continue to AR',
+    BUTTON_TEXT_CANCEL: 'Cancel',
+    BUTTON_TEXT_CLOSE: 'Close',
+};
+
 export class ARManager {
     constructor(scene, renderer, camera) {
         this.scene = scene;
@@ -49,23 +91,11 @@ export class ARManager {
     }
 
     createARButton() {
+        const cfg = AR_CONFIG;
         const button = document.createElement('button');
         button.id = 'ar-button';
-        button.textContent = '📷 Start AR';
-        button.style.cssText = `
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            padding: 12px 20px;
-            background: #ff6b35;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            z-index: 150;
-            font-size: 14px;
-        `;
+        button.textContent = cfg.BUTTON_TEXT;
+        // Styles are now defined in stylesheet (index.html)
 
         button.onclick = () => this.initiateARPermissions();
         document.body.appendChild(button);
@@ -78,6 +108,7 @@ export class ARManager {
      * Shows a modal explaining what permissions are needed and why
      */
     initiateARPermissions() {
+        const cfg = AR_CONFIG;
         if (this.hasAttemptedAR) {
             console.log('AR session already attempted');
             return;
@@ -86,16 +117,16 @@ export class ARManager {
         if (!this.isARSupported) {
             console.error('AR not supported on this device');
             this.showPermissionModal(
-                'AR Not Supported',
-                'AR is not available on your device. Please ensure you have a compatible device with AR capabilities.',
+                cfg.PERMISSION_TITLE_NOT_SUPPORTED,
+                cfg.PERMISSION_MSG_NOT_SUPPORTED,
                 false
             );
             return;
         }
 
         this.showPermissionModal(
-            'Camera Access Required',
-            'To experience the spooky haunted house in AR, we need access to your camera. Your location may also be used to show ghosts near the target house. We do not store or share your data.',
+            cfg.PERMISSION_TITLE_CAMERA,
+            cfg.PERMISSION_MSG_CAMERA,
             true
         );
     }
@@ -104,78 +135,34 @@ export class ARManager {
      * Show a clean permission modal to the user
      */
     showPermissionModal(title, message, showContinue = true) {
+        const cfg = AR_CONFIG;
+
         // Create modal overlay
         const modalOverlay = document.createElement('div');
         modalOverlay.id = 'ar-permission-modal';
-        modalOverlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        `;
+        // Styles defined in stylesheet (index.html)
 
         // Create modal content
         const modal = document.createElement('div');
-        modal.style.cssText = `
-            background: #1a1a2e;
-            border-radius: 12px;
-            padding: 24px;
-            max-width: 400px;
-            text-align: center;
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        `;
 
         // Title
         const titleEl = document.createElement('h2');
         titleEl.textContent = title;
-        titleEl.style.cssText = `
-            margin: 0 0 12px 0;
-            font-size: 20px;
-            font-weight: bold;
-        `;
         modal.appendChild(titleEl);
 
         // Message
         const messageEl = document.createElement('p');
         messageEl.textContent = message;
-        messageEl.style.cssText = `
-            margin: 0 0 24px 0;
-            font-size: 14px;
-            line-height: 1.5;
-            color: rgba(255, 255, 255, 0.9);
-        `;
         modal.appendChild(messageEl);
 
         // Button container
         const buttonContainer = document.createElement('div');
-        buttonContainer.style.cssText = `
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-        `;
 
         if (showContinue) {
             // Continue button
             const continueBtn = document.createElement('button');
-            continueBtn.textContent = 'Continue to AR';
-            continueBtn.style.cssText = `
-                flex: 1;
-                padding: 10px 16px;
-                background: #ff6b35;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                font-weight: bold;
-                cursor: pointer;
-                font-size: 14px;
-            `;
+            continueBtn.textContent = cfg.BUTTON_TEXT_CONTINUE;
+            continueBtn.style.flex = '1';
             continueBtn.onclick = () => {
                 modalOverlay.remove();
                 this.startAR();
@@ -185,18 +172,10 @@ export class ARManager {
 
         // Cancel/Close button
         const cancelBtn = document.createElement('button');
-        cancelBtn.textContent = showContinue ? 'Cancel' : 'Close';
-        cancelBtn.style.cssText = `
-            ${showContinue ? 'flex: 1;' : ''}
-            padding: 10px 16px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 14px;
-        `;
+        cancelBtn.textContent = showContinue ? cfg.BUTTON_TEXT_CANCEL : cfg.BUTTON_TEXT_CLOSE;
+        if (showContinue) cancelBtn.style.flex = '1';
+        // Apply secondary button style for cancel
+        cancelBtn.style.cssText = `${cancelBtn.style.cssText}; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3);`;
         cancelBtn.onclick = () => {
             modalOverlay.remove();
             if (!showContinue) {
@@ -249,6 +228,7 @@ export class ARManager {
             this.renderer.xr.setSession(this.xrSession);
 
         } catch (err) {
+            const cfg = AR_CONFIG;
             console.error('❌ Failed to start AR session:', err);
             this.isARActive = false;
             this.permissionState = 'denied';
@@ -256,8 +236,8 @@ export class ARManager {
 
             // Show error modal
             this.showPermissionModal(
-                'Permission Denied',
-                'AR access was not granted. Please enable camera permissions in your device settings and try again.',
+                cfg.PERMISSION_TITLE_DENIED,
+                cfg.PERMISSION_MSG_DENIED,
                 false
             );
         }

@@ -41,8 +41,22 @@ export class LocationManager {
     }
 
     onPositionUpdate(position) {
-        this.currentLat = position.coords.latitude;
-        this.currentLng = position.coords.longitude;
+        // Validate geolocation data
+        if (!position || !position.coords) {
+            console.warn('Invalid position data received');
+            return;
+        }
+
+        const { latitude, longitude } = position.coords;
+
+        // Validate coordinates
+        if (!this._isValidCoordinate(latitude, longitude)) {
+            console.warn('Invalid coordinates:', latitude, longitude);
+            return;
+        }
+
+        this.currentLat = latitude;
+        this.currentLng = longitude;
         this.distance = this.calculateDistance(
             this.currentLat,
             this.currentLng,
@@ -50,16 +64,37 @@ export class LocationManager {
             this.targetLng
         );
 
+        this._notifyCallback();
+    }
+
+    _isValidCoordinate(lat, lng) {
+        // Latitude: -90 to 90
+        // Longitude: -180 to 180
+        return (
+            typeof lat === 'number' &&
+            typeof lng === 'number' &&
+            lat >= -90 && lat <= 90 &&
+            lng >= -180 && lng <= 180 &&
+            !isNaN(lat) &&
+            !isNaN(lng)
+        );
+    }
+
+    _notifyCallback() {
         if (this.callback) {
-            this.callback({
-                currentLat: this.currentLat,
-                currentLng: this.currentLng,
-                targetLat: this.targetLat,
-                targetLng: this.targetLng,
-                distance: this.distance,
-                address: this.targetAddress
-            });
+            this.callback(this._createLocationData());
         }
+    }
+
+    _createLocationData() {
+        return {
+            currentLat: this.currentLat,
+            currentLng: this.currentLng,
+            targetLat: this.targetLat,
+            targetLng: this.targetLng,
+            distance: this.distance,
+            address: this.targetAddress
+        };
     }
 
     // Haversine formula for distance calculation
@@ -91,16 +126,7 @@ export class LocationManager {
                 this.targetLng
             );
 
-            if (this.callback) {
-                this.callback({
-                    currentLat: this.currentLat,
-                    currentLng: this.currentLng,
-                    targetLat: this.targetLat,
-                    targetLng: this.targetLng,
-                    distance: this.distance,
-                    address: this.targetAddress
-                });
-            }
+            this._notifyCallback();
         }, 500);
     }
 

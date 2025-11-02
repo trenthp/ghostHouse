@@ -7,9 +7,10 @@ export class AudioManager {
         // Track creeping sound oscillators for looping
         this.creepingOscillators = [];
         this.audioContext = null;
+        this.isCreepingSoundActive = false; // Prevent duplicate creeping sounds
 
-        this.initSounds();
         this.initAudioContext();
+        this.initSounds();
     }
 
     initAudioContext() {
@@ -44,7 +45,9 @@ export class AudioManager {
         }
 
         try {
-            const ctx = this.audioContext || new (window.AudioContext || window.webkitAudioContext)();
+            const ctx = this._getAudioContext();
+            if (!ctx) return;
+
             const oscillator = ctx.createOscillator();
             const gainNode = ctx.createGain();
 
@@ -65,12 +68,28 @@ export class AudioManager {
         }
     }
 
+    _getAudioContext() {
+        if (this.audioContext) {
+            return this.audioContext;
+        }
+
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            this.audioContext = ctx;
+            return ctx;
+        } catch (e) {
+            console.debug('AudioContext creation failed:', e.message);
+            return null;
+        }
+    }
+
     /**
      * Play or manage creeping sound when ghosts are approaching
      * @param {number} creepingGhostCount - Number of ghosts currently creeping
      */
     updateCreepingAudio(creepingGhostCount) {
-        if (!this.enabled || !this.audioContext) return;
+        const ctx = this._getAudioContext();
+        if (!this.enabled || !ctx) return;
 
         // Stop all creeping sounds if no ghosts creeping
         if (creepingGhostCount === 0) {
@@ -78,23 +97,23 @@ export class AudioManager {
             return;
         }
 
-        // Start or adjust creeping sound
-        if (this.creepingOscillators.length === 0 && creepingGhostCount > 0) {
+        // Start creeping sound only if not already active (prevents duplicates)
+        if (!this.isCreepingSoundActive && creepingGhostCount > 0) {
             this.playCreepingSound();
-        } else if (this.creepingOscillators.length > 0) {
+        } else if (this.isCreepingSoundActive && this.creepingOscillators.length > 0) {
             // Adjust volume based on number of creeping ghosts
             const volumeMultiplier = Math.min(creepingGhostCount * 0.3, 0.8); // Max 80% volume
             this.creepingOscillators.forEach(item => {
-                item.gainNode.gain.setValueAtTime(this.masterVolume * volumeMultiplier, this.audioContext.currentTime);
+                item.gainNode.gain.setValueAtTime(this.masterVolume * volumeMultiplier, ctx.currentTime);
             });
         }
     }
 
     playCreepingSound() {
-        if (!this.enabled || !this.audioContext || !this.sounds['creep']) return;
+        const ctx = this._getAudioContext();
+        if (!this.enabled || !ctx || !this.sounds['creep'] || this.isCreepingSoundActive) return;
 
         try {
-            const ctx = this.audioContext;
             const sound = this.sounds['creep'];
 
             const oscillator = ctx.createOscillator();
@@ -113,26 +132,29 @@ export class AudioManager {
 
             // Store for later stopping
             this.creepingOscillators.push({ oscillator, gainNode });
+            this.isCreepingSoundActive = true;
         } catch (e) {
             console.debug('Creeping audio playback not available:', e.message);
         }
     }
 
     stopCreepingSound() {
-        if (!this.audioContext) return;
+        const ctx = this._getAudioContext();
+        if (!ctx) return;
 
         this.creepingOscillators.forEach(item => {
             try {
                 // Fade out before stopping
-                item.gainNode.gain.setValueAtTime(item.gainNode.gain.value, this.audioContext.currentTime);
-                item.gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.2);
-                item.oscillator.stop(this.audioContext.currentTime + 0.2);
+                item.gainNode.gain.setValueAtTime(item.gainNode.gain.value, ctx.currentTime);
+                item.gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+                item.oscillator.stop(ctx.currentTime + 0.2);
             } catch (e) {
                 console.debug('Error stopping creeping audio:', e.message);
             }
         });
 
         this.creepingOscillators = [];
+        this.isCreepingSoundActive = false;
     }
 
     setMasterVolume(volume) {
