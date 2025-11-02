@@ -1,3 +1,5 @@
+import { GhostTrackerHUD } from './GhostTrackerHUD.js';
+
 export class UIManager {
     constructor() {
         this.locationStatus = document.getElementById('locationStatus');
@@ -14,6 +16,9 @@ export class UIManager {
         this.comboLabel = document.getElementById('comboLabel');
 
         this.lastCombo = 0;
+
+        // Initialize ghost tracker HUD
+        this.ghostTrackerHUD = new GhostTrackerHUD();
     }
 
     updateLocationStatus(data, isAtLocation) {
@@ -74,5 +79,17 @@ export class UIManager {
     showNotification(message, duration = 2000) {
         // Toast notification system
         console.log(message);
+    }
+
+    /**
+     * Update ghost tracker HUD with current creeping ghosts
+     */
+    updateGhostTracker(creepingGhosts, camera) {
+        this.ghostTrackerHUD.update(
+            creepingGhosts,
+            camera,
+            window.innerWidth,
+            window.innerHeight
+        );
     }
 }

@@ -54,10 +54,18 @@ export class GhostManager {
             this.spawnTimer = this.spawnRate;
         }
 
+        // Count creeping ghosts for audio
+        let creepingGhostCount = 0;
+
         // Update all ghosts
         for (let i = this.ghosts.length - 1; i >= 0; i--) {
             const ghost = this.ghosts[i];
             ghost.update(deltaTime, camera);
+
+            // Count creeping ghosts
+            if (ghost.isCreeping()) {
+                creepingGhostCount++;
+            }
 
             // Remove ghosts that are too far away from the target location (50 meter visibility radius)
             const distToTargetLocation = ghost.getPosition().distanceTo(this.targetLocationPosition);
@@ -66,6 +74,9 @@ export class GhostManager {
                 this.ghosts.splice(i, 1);
             }
         }
+
+        // Update creeping audio based on number of ghosts approaching
+        this.audioManager?.updateCreepingAudio(creepingGhostCount);
     }
 
     /**
@@ -138,5 +149,18 @@ export class GhostManager {
 
     getScaredGhosts() {
         return this.ghosts.filter(g => g.isScared()).length;
+    }
+
+    /**
+     * Get all creeping ghosts with their directional information for HUD rendering
+     */
+    getCreepingGhosts(camera) {
+        return this.ghosts
+            .filter(g => g.isCreeping())
+            .map(g => ({
+                ghost: g,
+                direction: g.getDirectionToGhost(camera),
+                distance: g.getPosition().distanceTo(camera.position)
+            }));
     }
 }

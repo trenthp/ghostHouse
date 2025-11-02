@@ -210,6 +210,10 @@ class HalloweenGhostHouse {
             // Update game manager
             this.gameManager.update(deltaTime);
 
+            // Update ghost tracker HUD with creeping ghosts
+            const creepingGhosts = this.ghostManager.getCreepingGhosts(this.camera);
+            this.uiManager.updateGhostTracker(creepingGhosts, this.camera);
+
             // Render - works with both XR and non-XR
             if (this.arManager.isARActive && frame) {
                 // XR rendering handled by WebXR

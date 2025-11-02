@@ -7,21 +7,21 @@ export class Ghost {
         this.mesh.position.copy(position);
         this.position = position.clone();
         this.targetPosition = position.clone();
+        this.hoverCenter = position.clone(); // Center point when hovering
 
         // Movement properties
         this.velocity = new THREE.Vector3(0, 0, 0);
-        this.speed = 3 + Math.random() * 2; // 3-5 m/s
-        this.approachSpeed = 1 + Math.random() * 1.5; // 1-2.5 m/s when approaching
+        this.hoverSpeed = 0.5 + Math.random() * 0.5; // 0.5-1.0 m/s hovering in small area
+        this.creepSpeed = 0.3 + Math.random() * 0.2; // 0.3-0.5 m/s when creeping toward user
         this.bobAmount = 0.3;
         this.bobSpeed = 1.5;
         this.bobTime = Math.random() * Math.PI * 2;
 
         // Behavior
-        this.state = 'flying'; // 'flying', 'approaching', 'scared', 'fleeing'
+        this.state = 'hovering'; // 'hovering', 'creeping', 'scared', 'fleeing'
         this.scared = false;
         this.scareTTL = 0;
         this.scareIntensity = 0;
-        this.isBeingWatchedTimeout = 0; // Counter for how long ghost was in view
 
         // Animation & Rotation
         this.rotation = 0;
@@ -40,8 +40,10 @@ export class Ghost {
         this.isSpawning = true;
 
         // View direction tracking
-        this.lastWatchedTime = 0;
-        this.watchTimeout = 1.5; // How long before ghost starts approaching (1.5 seconds)
+        this.isInViewport = false;
+        this.creepingAudioPlaying = false;
+        this.outOfViewTimer = 0;
+        this.creepStartDelay = 0.5; // Delay before starting to creep (0.5 seconds)
     }
 
     createMesh() {
@@ -145,12 +147,12 @@ export class Ghost {
         this.updateCameraViewTracking(camera);
 
         // Movement behavior
-        if (this.state === 'flying') {
-            // Gentle wander
-            this.wanderUpdate(deltaTime, camera);
-        } else if (this.state === 'approaching') {
-            // Move toward camera when not being watched
-            this.approachingUpdate(deltaTime, camera);
+        if (this.state === 'hovering') {
+            // Hover in small area when visible
+            this.hoveringUpdate(deltaTime, camera);
+        } else if (this.state === 'creeping') {
+            // Slowly creep toward camera when out of view
+            this.creepingUpdate(deltaTime, camera);
         } else if (this.state === 'fleeing') {
             this.fleeing(deltaTime, camera);
         }
@@ -226,29 +228,28 @@ export class Ghost {
         const viewAngle = cameraForward.dot(dirToGhost);
 
         // Ghost is visible if angle is > ~0.3 (roughly 70 degree cone in front)
-        const isInView = viewAngle > 0.3;
+        this.isInViewport = viewAngle > 0.3;
 
-        if (isInView) {
-            // Ghost is being looked at
-            this.lastWatchedTime = 0;
+        if (this.isInViewport) {
+            // Ghost is in viewport - stay hovering
+            this.outOfViewTimer = 0;
+            this.creepingAudioPlaying = false;
 
             // Blend towards facing camera when being watched
             this.facingCameraBlend = Math.min(this.facingCameraBlend + 0.1, 1.0);
 
-            // Keep ghost in flying/wandering state when being watched
-            if (this.state === 'approaching') {
-                this.state = 'flying';
+            // Switch to hovering state when back in view
+            if (this.state === 'creeping') {
+                this.state = 'hovering';
             }
         } else {
-            // Ghost is not being looked at - start approaching
-            this.lastWatchedTime += 1; // Increment watch counter
-
-            // Blend away from facing camera
+            // Ghost is out of viewport
+            this.outOfViewTimer += 1; // Increment out-of-view counter (counts frames, ~60 per second)
             this.facingCameraBlend = Math.max(this.facingCameraBlend - 0.1, 0.0);
 
-            // After timeout, switch to approaching state
-            if (this.lastWatchedTime > this.watchTimeout && this.state === 'flying') {
-                this.state = 'approaching';
+            // Switch to creeping after delay
+            if (this.outOfViewTimer > (this.creepStartDelay * 60) && this.state === 'hovering') {
+                this.state = 'creeping';
             }
         }
     }
@@ -274,44 +275,52 @@ export class Ghost {
         this.mesh.rotation.y = finalRotation;
     }
 
-    wanderUpdate(deltaTime, camera) {
-        // Random wander in a small area
-        if (Math.random() < 0.01) {
+    /**
+     * Hover in a small area around the spawn point when visible
+     * Ghost gently floats back and forth in a confined space
+     */
+    hoveringUpdate(deltaTime, camera) {
+        // Occasionally pick a new small hover target
+        if (Math.random() < 0.005) {
             const angle = Math.random() * Math.PI * 2;
-            const distance = 5 + Math.random() * 10;
-            this.targetPosition.x = this.position.x + Math.cos(angle) * distance;
-            this.targetPosition.z = this.position.z + Math.sin(angle) * distance;
-            this.targetPosition.y = 0.5 + Math.random() * 2;
+            const distance = 1 + Math.random() * 2; // Only 1-3 meters from hover center
+            this.targetPosition.x = this.hoverCenter.x + Math.cos(angle) * distance;
+            this.targetPosition.z = this.hoverCenter.z + Math.sin(angle) * distance;
+            this.targetPosition.y = this.hoverCenter.y + (Math.random() - 0.5) * 1; // Small vertical movement
         }
 
-        // Move towards target
+        // Move slowly towards target
         const direction = this.targetPosition.clone().sub(this.position);
-        if (direction.length() > 0.5) {
+        if (direction.length() > 0.2) {
             direction.normalize();
-            this.position.add(direction.multiplyScalar(deltaTime * this.speed));
+            this.position.add(direction.multiplyScalar(deltaTime * this.hoverSpeed));
         }
+
+        // Gentle rotation while hovering
+        this.rotationSpeed = 0.02;
     }
 
     /**
-     * Approach the camera when not being watched
-     * Ghost moves toward the user at a slower, more deliberate pace
+     * Creep slowly toward the camera when out of view
+     * Ghost moves deliberately and ominously, with eerie sound
      */
-    approachingUpdate(deltaTime, camera) {
-        // Move directly toward camera
+    creepingUpdate(deltaTime, camera) {
+        // Move slowly and deliberately toward camera
         const direction = camera.position.clone().sub(this.position);
         const distance = direction.length();
 
-        // Stop approaching when very close to camera (minimum 2 meters)
+        // Stop creeping when very close to camera (2 meter safety distance)
         if (distance > 2) {
             direction.normalize();
-            this.position.add(direction.multiplyScalar(deltaTime * this.approachSpeed));
+            this.position.add(direction.multiplyScalar(deltaTime * this.creepSpeed));
 
-            // Increase rotation speed when approaching for eerie effect
-            this.rotationSpeed = 0.08;
+            // Slightly increase rotation speed when creeping for unsettling effect
+            this.rotationSpeed = 0.04;
         } else {
-            // Very close - return to flying state
-            this.state = 'flying';
-            this.lastWatchedTime = 0;
+            // Very close - return to hovering state
+            this.state = 'hovering';
+            this.outOfViewTimer = 0;
+            this.creepingAudioPlaying = false;
         }
     }
 
@@ -345,6 +354,20 @@ export class Ghost {
 
     isScared() {
         return this.scared;
+    }
+
+    /**
+     * Check if ghost is currently creeping toward the camera
+     */
+    isCreeping() {
+        return this.state === 'creeping';
+    }
+
+    /**
+     * Get the direction from camera to this ghost (for HUD indicator)
+     */
+    getDirectionToGhost(camera) {
+        return this.position.clone().sub(camera.position);
     }
 
     remove() {
