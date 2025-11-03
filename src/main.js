@@ -109,8 +109,11 @@ class HalloweenGhostHouse {
         const arButton = document.getElementById('ar-button');
         if (arButton) {
             arButton.addEventListener('click', () => {
+                this.debugManager.log('AR Button clicked', 'info');
                 this.showARIntroModal();
             });
+        } else {
+            this.debugManager.log('WARNING: AR button not found in DOM', 'warn');
         }
 
         // AR intro modal handlers
@@ -118,12 +121,16 @@ class HalloweenGhostHouse {
         const cancelARBtn = document.getElementById('cancelARButton');
         if (startARBtn) {
             startARBtn.addEventListener('click', () => {
+                this.debugManager.log('Start AR button clicked', 'info');
                 this.closeARIntroModal();
                 this.arManager?.initiateARPermissions();
             });
+        } else {
+            this.debugManager.log('WARNING: Start AR button not found', 'warn');
         }
         if (cancelARBtn) {
             cancelARBtn.addEventListener('click', () => {
+                this.debugManager.log('Cancel AR clicked', 'info');
                 this.closeARIntroModal();
             });
         }
@@ -195,13 +202,18 @@ class HalloweenGhostHouse {
     }
 
     showARIntroModal() {
+        this.debugManager.log('Showing AR intro modal', 'info');
         const modal = document.getElementById('arIntroModal');
         if (modal) {
             modal.classList.add('active');
+            this.debugManager.log('Modal class added', 'info');
+        } else {
+            this.debugManager.log('ERROR: AR intro modal not found', 'error');
         }
     }
 
     closeARIntroModal() {
+        this.debugManager.log('Closing AR intro modal', 'info');
         const modal = document.getElementById('arIntroModal');
         if (modal) {
             modal.classList.remove('active');

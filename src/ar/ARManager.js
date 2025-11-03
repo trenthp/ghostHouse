@@ -105,13 +105,15 @@ export class ARManager {
      */
     initiateARPermissions() {
         const cfg = AR_CONFIG;
+        this.debug('initiateARPermissions called');
+
         if (this.hasAttemptedAR) {
-            console.log('AR session already attempted');
+            this.debug('AR session already attempted - returning', false);
             return;
         }
 
         if (!this.isARSupported) {
-            console.error('AR not supported on this device');
+            this.debug('AR not supported on this device', false);
             this.showPermissionModal(
                 cfg.PERMISSION_TITLE_NOT_SUPPORTED,
                 cfg.PERMISSION_MSG_NOT_SUPPORTED,
@@ -120,6 +122,7 @@ export class ARManager {
             return;
         }
 
+        this.debug('Showing camera permission modal', true);
         this.showPermissionModal(
             cfg.PERMISSION_TITLE_CAMERA,
             cfg.PERMISSION_MSG_CAMERA,
@@ -240,7 +243,7 @@ export class ARManager {
 
             // Notify that AR has started
             if (this.onARStarted) {
-                console.log('Calling onARStarted callback');
+                this.debug('Calling onARStarted callback');
                 this.onARStarted();
             }
 
