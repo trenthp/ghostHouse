@@ -43,12 +43,11 @@ const AR_CONFIG = {
 };
 
 export class ARManager {
-    constructor(scene, renderer, camera, onARStarted, debugManager = null) {
+    constructor(scene, renderer, camera, onARStarted) {
         this.scene = scene;
         this.renderer = renderer;
         this.camera = camera;
         this.onARStarted = onARStarted;
-        this.debugManager = debugManager;
         this.xrSession = null;
         this.isARSupported = false;
         this.isARActive = false;
@@ -56,14 +55,6 @@ export class ARManager {
         this.permissionState = 'pending'; // pending, checking, accepted, denied
 
         this.checkARSupport();
-    }
-
-    debug(message, isSuccess = true) {
-        if (this.debugManager) {
-            this.debugManager.logAR(message, isSuccess);
-        } else {
-            console.log(`[AR] ${message}`);
-        }
     }
 
     checkARSupport() {
@@ -105,15 +96,13 @@ export class ARManager {
      */
     initiateARPermissions() {
         const cfg = AR_CONFIG;
-        this.debug('initiateARPermissions called');
-
         if (this.hasAttemptedAR) {
-            this.debug('AR session already attempted - returning', false);
+            console.log('AR session already attempted');
             return;
         }
 
         if (!this.isARSupported) {
-            this.debug('AR not supported on this device', false);
+            console.error('AR not supported on this device');
             this.showPermissionModal(
                 cfg.PERMISSION_TITLE_NOT_SUPPORTED,
                 cfg.PERMISSION_MSG_NOT_SUPPORTED,
@@ -122,7 +111,6 @@ export class ARManager {
             return;
         }
 
-        this.debug('Showing camera permission modal', true);
         this.showPermissionModal(
             cfg.PERMISSION_TITLE_CAMERA,
             cfg.PERMISSION_MSG_CAMERA,
@@ -140,7 +128,6 @@ export class ARManager {
         const modalOverlay = document.createElement('div');
         modalOverlay.id = 'ar-permission-modal';
         modalOverlay.className = 'modal-overlay active'; // Add the modal-overlay class with active state
-        this.debug('Permission modal created and added to DOM');
 
         // Create modal content
         const modal = document.createElement('div');
@@ -166,7 +153,6 @@ export class ARManager {
             continueBtn.textContent = cfg.BUTTON_TEXT_CONTINUE;
             continueBtn.style.cssText = 'flex: 1; padding: 10px 16px; background: #ff6b35; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;';
             continueBtn.onclick = () => {
-                this.debug('Continue to AR button clicked');
                 modalOverlay.remove();
                 this.startAR();
             };
@@ -178,7 +164,6 @@ export class ARManager {
         cancelBtn.textContent = showContinue ? cfg.BUTTON_TEXT_CANCEL : cfg.BUTTON_TEXT_CLOSE;
         cancelBtn.style.cssText = `flex: 1; padding: 10px 16px; background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;`;
         cancelBtn.onclick = () => {
-            this.debug('Cancel AR clicked');
             modalOverlay.remove();
             if (!showContinue) {
                 this.hasAttemptedAR = true;
@@ -192,16 +177,13 @@ export class ARManager {
     }
 
     async startAR() {
-        this.debug('startAR() method called');
-
         if (this.hasAttemptedAR) {
-            this.debug('AR session already attempted', false);
+            console.log('AR session already attempted');
             return;
         }
 
         this.hasAttemptedAR = true;
         this.permissionState = 'checking';
-        this.debug('Starting AR session request...');
 
         if (!this.isARSupported) {
             console.error('AR not supported on this device');
@@ -209,7 +191,7 @@ export class ARManager {
         }
 
         try {
-            this.debug('Requesting AR session from navigator.xr...');
+            console.log('🚀 Requesting AR session...');
 
             // Request with only essential features, rest are optional
             const sessionInit = {
@@ -226,7 +208,6 @@ export class ARManager {
                 sessionInit.domOverlay = { root: document.body };
             }
 
-            this.debug('Awaiting navigator.xr.requestSession()...');
             this.xrSession = await navigator.xr.requestSession('immersive-ar', sessionInit);
 
             console.log('✅ AR Session created successfully!');
@@ -249,7 +230,6 @@ export class ARManager {
 
             // Notify that AR has started
             if (this.onARStarted) {
-                this.debug('Calling onARStarted callback');
                 this.onARStarted();
             }
 

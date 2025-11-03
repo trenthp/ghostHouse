@@ -257,69 +257,6 @@
             background: #f97316;
         }
 
-        /* Debug Panel */
-        .debug-panel {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.9);
-            border: 1px solid #ff6b35;
-            border-radius: 8px;
-            padding: 12px;
-            font-size: 11px;
-            color: #0f0;
-            font-family: monospace;
-            max-width: 300px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 999;
-            display: none;
-            pointer-events: auto;
-            line-height: 1.4;
-        }
-
-        .debug-panel.active {
-            display: block;
-        }
-
-        .debug-panel .debug-line {
-            margin: 2px 0;
-            word-break: break-all;
-        }
-
-        .debug-panel .debug-ok {
-            color: #0f0;
-        }
-
-        .debug-panel .debug-warn {
-            color: #ff0;
-        }
-
-        .debug-panel .debug-error {
-            color: #f00;
-        }
-
-        .debug-toggle {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(255, 107, 53, 0.7);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            font-size: 20px;
-            cursor: pointer;
-            z-index: 998;
-            pointer-events: auto;
-            transition: all 0.3s;
-        }
-
-        .debug-toggle:hover {
-            background: rgba(255, 107, 53, 1);
-        }
-
         @media (max-width: 600px) {
             .ui-top {
                 flex-direction: column;
@@ -347,11 +284,6 @@
             .modal-content {
                 max-width: 85vw;
                 padding: 16px;
-            }
-
-            .debug-panel {
-                max-width: 90vw;
-                font-size: 10px;
             }
         }
     </style>
@@ -412,10 +344,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Debug Panel -->
-    <div class="debug-panel" id="debugPanel"></div>
-    <button class="debug-toggle" id="debugToggle">🐛</button>
 
     <script type="module" src="./src/main.js"></script>
 </body>
