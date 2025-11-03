@@ -163,6 +163,7 @@ export class ARManager {
             continueBtn.textContent = cfg.BUTTON_TEXT_CONTINUE;
             continueBtn.style.flex = '1';
             continueBtn.onclick = () => {
+                this.debug('Continue to AR button clicked');
                 modalOverlay.remove();
                 this.startAR();
             };
@@ -189,13 +190,16 @@ export class ARManager {
     }
 
     async startAR() {
+        this.debug('startAR() method called');
+
         if (this.hasAttemptedAR) {
-            console.log('AR session already attempted');
+            this.debug('AR session already attempted', false);
             return;
         }
 
         this.hasAttemptedAR = true;
         this.permissionState = 'checking';
+        this.debug('Starting AR session request...');
 
         if (!this.isARSupported) {
             console.error('AR not supported on this device');
@@ -203,7 +207,7 @@ export class ARManager {
         }
 
         try {
-            console.log('🚀 Requesting AR session...');
+            this.debug('Requesting AR session from navigator.xr...');
 
             // Request with only essential features, rest are optional
             const sessionInit = {
@@ -220,7 +224,7 @@ export class ARManager {
                 sessionInit.domOverlay = { root: document.body };
             }
 
-            console.log('Session init config:', sessionInit);
+            this.debug('Awaiting navigator.xr.requestSession()...');
             this.xrSession = await navigator.xr.requestSession('immersive-ar', sessionInit);
 
             console.log('✅ AR Session created successfully!');
