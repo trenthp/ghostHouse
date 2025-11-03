@@ -18,6 +18,7 @@ class HalloweenGhostHouse {
         this.uiManager = null;
 
         this.isRunning = false;
+        this.arStarted = false; // Don't spawn ghosts until AR is started
         this.customLocation = null; // For "Custom House" feature
     }
 
@@ -31,7 +32,7 @@ class HalloweenGhostHouse {
             this.uiManager = new UIManager();
             this.locationManager = new LocationManager();
             this.ghostManager = new GhostManager(this.scene, this.gameManager);
-            this.arManager = new ARManager(this.scene, this.renderer, this.camera);
+            this.arManager = new ARManager(this.scene, this.renderer, this.camera, () => this.onARStarted());
 
             // Check WebXR support
             const supportsWebXR = navigator.xr !== undefined;
@@ -99,6 +100,29 @@ class HalloweenGhostHouse {
     }
 
     setupEventListeners() {
+        // AR button - show intro modal
+        const arButton = document.getElementById('ar-button');
+        if (arButton) {
+            arButton.addEventListener('click', () => {
+                this.showARIntroModal();
+            });
+        }
+
+        // AR intro modal handlers
+        const startARBtn = document.getElementById('startARButton');
+        const cancelARBtn = document.getElementById('cancelARButton');
+        if (startARBtn) {
+            startARBtn.addEventListener('click', () => {
+                this.closeARIntroModal();
+                this.arManager?.initiateARPermissions();
+            });
+        }
+        if (cancelARBtn) {
+            cancelARBtn.addEventListener('click', () => {
+                this.closeARIntroModal();
+            });
+        }
+
         // Toggle custom house
         const toggleButton = document.getElementById('toggleButton');
         if (toggleButton) {
@@ -165,6 +189,20 @@ class HalloweenGhostHouse {
         window.addEventListener('resize', () => this.onWindowResize());
     }
 
+    showARIntroModal() {
+        const modal = document.getElementById('arIntroModal');
+        if (modal) {
+            modal.classList.add('active');
+        }
+    }
+
+    closeARIntroModal() {
+        const modal = document.getElementById('arIntroModal');
+        if (modal) {
+            modal.classList.remove('active');
+        }
+    }
+
     openAddressModal() {
         const modal = document.getElementById('addressModal');
         const input = document.getElementById('addressInput');
@@ -213,7 +251,23 @@ class HalloweenGhostHouse {
             distance: 0,
             address: label || `${lat.toFixed(4)}, ${lng.toFixed(4)}`
         }, true);
+
+        // Activate ghosts if AR has been started
+        if (this.arStarted && !this.ghostManager.isActive) {
+            this.ghostManager.activate();
+        }
+
         console.log('Custom location set:', label);
+    }
+
+    onARStarted() {
+        console.log('AR session started - activating ghosts');
+        this.arStarted = true;
+
+        // If custom location is set, activate ghosts
+        if (this.customLocation && !this.ghostManager.isActive) {
+            this.ghostManager.activate();
+        }
     }
 
     onLocationUpdate(data) {
@@ -226,7 +280,8 @@ class HalloweenGhostHouse {
             const targetPosition = this.calculateTargetWorldPosition(data);
             this.ghostManager.setTargetLocation(targetPosition);
 
-            if (isAtLocation && !this.ghostManager.isActive) {
+            // Only activate if AR has been started and we're at location
+            if (this.arStarted && isAtLocation && !this.ghostManager.isActive) {
                 this.ghostManager.activate();
             } else if (!isAtLocation && this.ghostManager.isActive) {
                 this.ghostManager.deactivate();

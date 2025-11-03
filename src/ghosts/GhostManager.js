@@ -6,8 +6,8 @@ const GHOST_MANAGER_CONFIG = {
     // Spawning
     MAX_GHOSTS: 8, // Maximum concurrent ghosts (reduced from 15 for performance)
     SPAWN_RATE: 2, // seconds between ghost spawns
-    SPAWN_HEIGHT_BASE: 0.5, // base height for ghost spawning
-    SPAWN_HEIGHT_VARIANCE: 3, // additional random height variance
+    SPAWN_HEIGHT_BASE: 0.8, // base height for ghost spawning (eye level - camera is at 1.6m)
+    SPAWN_HEIGHT_VARIANCE: 0.6, // small variance around eye level
 
     // Spawn distance
     SPAWN_RADIUS: 20, // 20 meters radius

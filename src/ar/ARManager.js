@@ -43,10 +43,11 @@ const AR_CONFIG = {
 };
 
 export class ARManager {
-    constructor(scene, renderer, camera) {
+    constructor(scene, renderer, camera, onARStarted) {
         this.scene = scene;
         this.renderer = renderer;
         this.camera = camera;
+        this.onARStarted = onARStarted;
         this.xrSession = null;
         this.isARSupported = false;
         this.isARActive = false;
@@ -226,6 +227,11 @@ export class ARManager {
 
             // Set the XR session
             this.renderer.xr.setSession(this.xrSession);
+
+            // Notify that AR has started
+            if (this.onARStarted) {
+                this.onARStarted();
+            }
 
         } catch (err) {
             const cfg = AR_CONFIG;
