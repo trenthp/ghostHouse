@@ -139,10 +139,12 @@ export class ARManager {
         // Create modal overlay
         const modalOverlay = document.createElement('div');
         modalOverlay.id = 'ar-permission-modal';
-        // Styles defined in stylesheet (index.html)
+        modalOverlay.className = 'modal-overlay active'; // Add the modal-overlay class with active state
+        this.debug('Permission modal created and added to DOM');
 
         // Create modal content
         const modal = document.createElement('div');
+        modal.className = 'modal-content'; // Add the modal-content class
 
         // Title
         const titleEl = document.createElement('h2');
@@ -156,12 +158,13 @@ export class ARManager {
 
         // Button container
         const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'modal-buttons';
 
         if (showContinue) {
             // Continue button
             const continueBtn = document.createElement('button');
             continueBtn.textContent = cfg.BUTTON_TEXT_CONTINUE;
-            continueBtn.style.flex = '1';
+            continueBtn.style.cssText = 'flex: 1; padding: 10px 16px; background: #ff6b35; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;';
             continueBtn.onclick = () => {
                 this.debug('Continue to AR button clicked');
                 modalOverlay.remove();
@@ -173,10 +176,9 @@ export class ARManager {
         // Cancel/Close button
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = showContinue ? cfg.BUTTON_TEXT_CANCEL : cfg.BUTTON_TEXT_CLOSE;
-        if (showContinue) cancelBtn.style.flex = '1';
-        // Apply secondary button style for cancel
-        cancelBtn.style.cssText = `${cancelBtn.style.cssText}; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3);`;
+        cancelBtn.style.cssText = `flex: 1; padding: 10px 16px; background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;`;
         cancelBtn.onclick = () => {
+            this.debug('Cancel AR clicked');
             modalOverlay.remove();
             if (!showContinue) {
                 this.hasAttemptedAR = true;
