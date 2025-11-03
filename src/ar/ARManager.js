@@ -61,7 +61,7 @@ export class ARManager {
         console.log('Checking WebXR support...');
 
         if (!navigator.xr) {
-            console.warn('WebXR not available on this browser');
+            console.warn('❌ WebXR API not available on this browser');
             this.isARSupported = false;
             return;
         }
@@ -70,38 +70,24 @@ export class ARManager {
         navigator.xr.isSessionSupported('immersive-ar')
             .then((supported) => {
                 this.isARSupported = supported;
-                console.log('immersive-ar supported:', supported);
+                console.log('✅ immersive-ar support check result:', supported);
 
                 if (supported) {
-                    console.log('✅ AR is available! Creating AR start button.');
-                    this.createARButton();
+                    console.log('✅ AR is available!');
                 } else {
-                    console.log('❌ immersive-ar not supported. Checking for inline session...');
+                    console.log('⚠️  immersive-ar not directly supported. Checking for inline session...');
                     // Try inline session as fallback
                     return navigator.xr.isSessionSupported('inline');
                 }
             })
             .then((inlineSupported) => {
-                if (inlineSupported) {
-                    console.log('✅ Inline XR session available as fallback');
+                if (inlineSupported && !this.isARSupported) {
+                    console.log('⚠️  Inline XR session available as fallback (not immersive AR)');
                 }
             })
             .catch((err) => {
                 console.error('Error checking AR support:', err);
             });
-    }
-
-    createARButton() {
-        const cfg = AR_CONFIG;
-        const button = document.createElement('button');
-        button.id = 'ar-button';
-        button.textContent = cfg.BUTTON_TEXT;
-        // Styles are now defined in stylesheet (index.html)
-
-        button.onclick = () => this.initiateARPermissions();
-        document.body.appendChild(button);
-
-        console.log('AR button created');
     }
 
     /**
@@ -207,17 +193,30 @@ export class ARManager {
         try {
             console.log('🚀 Requesting AR session...');
 
-            this.xrSession = await navigator.xr.requestSession('immersive-ar', {
-                requiredFeatures: ['hit-test', 'dom-overlay'],
-                optionalFeatures: ['dom-overlay-for-handheld-ar', 'camera-access'],
-                domOverlay: { root: document.body },
-                camera: {
-                    width: { ideal: window.innerWidth },
-                    height: { ideal: window.innerHeight }
-                }
+            // Request with only essential features, rest are optional
+            const sessionInit = {
+                optionalFeatures: [
+                    'dom-overlay',
+                    'dom-overlay-for-handheld-ar',
+                    'hit-test',
+                    'camera-access'
+                ]
+            };
+
+            // Only set domOverlay if requesting the feature
+            if (sessionInit.optionalFeatures.includes('dom-overlay')) {
+                sessionInit.domOverlay = { root: document.body };
+            }
+
+            console.log('Session init config:', sessionInit);
+            this.xrSession = await navigator.xr.requestSession('immersive-ar', sessionInit);
+
+            console.log('✅ AR Session created successfully!');
+            console.log('Session details:', {
+                inputSources: this.xrSession.inputSources.length,
+                renderState: this.xrSession.renderState
             });
 
-            console.log('✅ AR Session started successfully!');
             this.isARActive = true;
             this.permissionState = 'accepted';
 
@@ -225,17 +224,26 @@ export class ARManager {
             const arButton = document.getElementById('ar-button');
             if (arButton) arButton.style.display = 'none';
 
-            // Set the XR session
+            // Set the XR session - this is critical
+            console.log('Setting XR session on renderer...');
             this.renderer.xr.setSession(this.xrSession);
+            console.log('✅ XR session set on renderer');
 
             // Notify that AR has started
             if (this.onARStarted) {
+                console.log('Calling onARStarted callback');
                 this.onARStarted();
             }
 
         } catch (err) {
             const cfg = AR_CONFIG;
             console.error('❌ Failed to start AR session:', err);
+            console.error('Error details:', {
+                name: err.name,
+                message: err.message,
+                stack: err.stack
+            });
+
             this.isARActive = false;
             this.permissionState = 'denied';
             this.hasAttemptedAR = false; // Allow retry
@@ -243,7 +251,7 @@ export class ARManager {
             // Show error modal
             this.showPermissionModal(
                 cfg.PERMISSION_TITLE_DENIED,
-                cfg.PERMISSION_MSG_DENIED,
+                `${cfg.PERMISSION_MSG_DENIED}\n\nError: ${err.message}`,
                 false
             );
         }

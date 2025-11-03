@@ -317,7 +317,7 @@ class HalloweenGhostHouse {
             // Update game manager
             this.gameManager.update(deltaTime);
 
-            // Render
+            // Render - renderer handles XR automatically when session is active
             this.renderer.render(this.scene, this.camera);
         });
     }
