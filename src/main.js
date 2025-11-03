@@ -52,6 +52,9 @@ class HalloweenGhostHouse {
             this.animate();
 
             this.isRunning = true;
+
+            // Show AR intro modal on load
+            setTimeout(() => this.showARIntroModal(), 500);
         } catch (error) {
             console.error('Failed to initialize:', error);
             this.uiManager.showError('Failed to initialize AR experience');
@@ -100,14 +103,6 @@ class HalloweenGhostHouse {
     }
 
     setupEventListeners() {
-        // AR button - show intro modal
-        const arButton = document.getElementById('ar-button');
-        if (arButton) {
-            arButton.addEventListener('click', () => {
-                this.showARIntroModal();
-            });
-        }
-
         // AR intro modal handlers
         const startARBtn = document.getElementById('startARButton');
         const cancelARBtn = document.getElementById('cancelARButton');
