@@ -4,6 +4,7 @@ import { GhostManager } from './ghosts/GhostManager.js';
 import { LocationManager } from './location/LocationManager.js';
 import { GameManager } from './game/GameManager.js';
 import { UIManager } from './ui/UIManager.js';
+import { DebugManager } from './debug/DebugManager.js';
 
 class HalloweenGhostHouse {
     constructor() {
@@ -16,6 +17,7 @@ class HalloweenGhostHouse {
         this.locationManager = null;
         this.gameManager = null;
         this.uiManager = null;
+        this.debugManager = new DebugManager();
 
         this.isRunning = false;
         this.arStarted = false; // Don't spawn ghosts until AR is started
@@ -24,6 +26,8 @@ class HalloweenGhostHouse {
 
     async init() {
         try {
+            this.debugManager.log('Initializing app...', 'info');
+
             // Initialize Three.js scene
             this.initScene();
 
@@ -32,10 +36,11 @@ class HalloweenGhostHouse {
             this.uiManager = new UIManager();
             this.locationManager = new LocationManager();
             this.ghostManager = new GhostManager(this.scene, this.gameManager);
-            this.arManager = new ARManager(this.scene, this.renderer, this.camera, () => this.onARStarted());
+            this.arManager = new ARManager(this.scene, this.renderer, this.camera, () => this.onARStarted(), this.debugManager);
 
             // Check WebXR support
             const supportsWebXR = navigator.xr !== undefined;
+            this.debugManager.reportARSupport(supportsWebXR);
             if (!supportsWebXR) {
                 this.uiManager.showError('WebXR not supported on this device');
             }
@@ -261,12 +266,13 @@ class HalloweenGhostHouse {
     }
 
     onARStarted() {
-        console.log('AR session started - activating ghosts');
+        this.debugManager.reportSessionStart();
         this.arStarted = true;
 
         // If custom location is set, activate ghosts
         if (this.customLocation && !this.ghostManager.isActive) {
             this.ghostManager.activate();
+            this.debugManager.logGhost('Activated (custom location)');
         }
     }
 
@@ -275,6 +281,7 @@ class HalloweenGhostHouse {
         if (!this.customLocation) {
             const isAtLocation = data.distance < 50; // 50 meters from target
             this.uiManager.updateLocationStatus(data, isAtLocation);
+            this.debugManager.reportLocationUpdate(data.distance, isAtLocation);
 
             // Set target location for GhostManager
             const targetPosition = this.calculateTargetWorldPosition(data);
@@ -283,6 +290,7 @@ class HalloweenGhostHouse {
             // Only activate if AR has been started and we're at location
             if (this.arStarted && isAtLocation && !this.ghostManager.isActive) {
                 this.ghostManager.activate();
+                this.debugManager.logGhost('Activated (location-based)');
             } else if (!isAtLocation && this.ghostManager.isActive) {
                 this.ghostManager.deactivate();
             }

@@ -43,11 +43,12 @@ const AR_CONFIG = {
 };
 
 export class ARManager {
-    constructor(scene, renderer, camera, onARStarted) {
+    constructor(scene, renderer, camera, onARStarted, debugManager = null) {
         this.scene = scene;
         this.renderer = renderer;
         this.camera = camera;
         this.onARStarted = onARStarted;
+        this.debugManager = debugManager;
         this.xrSession = null;
         this.isARSupported = false;
         this.isARActive = false;
@@ -55,6 +56,14 @@ export class ARManager {
         this.permissionState = 'pending'; // pending, checking, accepted, denied
 
         this.checkARSupport();
+    }
+
+    debug(message, isSuccess = true) {
+        if (this.debugManager) {
+            this.debugManager.logAR(message, isSuccess);
+        } else {
+            console.log(`[AR] ${message}`);
+        }
     }
 
     checkARSupport() {
