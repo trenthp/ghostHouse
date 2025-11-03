@@ -1,27 +1,24 @@
 import * as THREE from 'three';
 import { ARManager } from './ar/ARManager.js';
 import { GhostManager } from './ghosts/GhostManager.js';
-import { AudioManager } from './audio/AudioManager.js';
-import { UIManager } from './ui/UIManager.js';
 import { LocationManager } from './location/LocationManager.js';
 import { GameManager } from './game/GameManager.js';
+import { UIManager } from './ui/UIManager.js';
 
 class HalloweenGhostHouse {
     constructor() {
         this.scene = null;
         this.camera = null;
         this.renderer = null;
-        this.xrSession = null;
 
         this.arManager = null;
         this.ghostManager = null;
-        this.audioManager = null;
-        this.uiManager = null;
         this.locationManager = null;
         this.gameManager = null;
+        this.uiManager = null;
 
         this.isRunning = false;
-        this.enableGhostsAnywhere = false;
+        this.customLocation = null; // For "Custom House" feature
     }
 
     async init() {
@@ -30,18 +27,16 @@ class HalloweenGhostHouse {
             this.initScene();
 
             // Initialize managers
-            this.audioManager = new AudioManager();
+            this.gameManager = new GameManager();
             this.uiManager = new UIManager();
             this.locationManager = new LocationManager();
-            this.gameManager = new GameManager();
+            this.ghostManager = new GhostManager(this.scene, this.gameManager);
             this.arManager = new ARManager(this.scene, this.renderer, this.camera);
-            this.ghostManager = new GhostManager(this.scene, this.gameManager, this.audioManager);
 
             // Check WebXR support
             const supportsWebXR = navigator.xr !== undefined;
             if (!supportsWebXR) {
                 this.uiManager.showError('WebXR not supported on this device');
-                return;
             }
 
             // Start location tracking
@@ -49,19 +44,13 @@ class HalloweenGhostHouse {
                 this.onLocationUpdate(data);
             });
 
-            // Set up event listeners
+            // Setup event listeners
             this.setupEventListeners();
 
             // Start animation loop
             this.animate();
 
             this.isRunning = true;
-
-            // Hide instruction overlay after 2 seconds
-            setTimeout(() => {
-                window.closeInstructions?.();
-            }, 2000);
-
         } catch (error) {
             console.error('Failed to initialize:', error);
             this.uiManager.showError('Failed to initialize AR experience');
@@ -109,61 +98,48 @@ class HalloweenGhostHouse {
         window.addEventListener('resize', () => this.onWindowResize());
     }
 
-    onLocationUpdate(data) {
-        const isAtLocation = data.distance < 50; // 50 meters from target
-        const shouldShowGhosts = isAtLocation || this.enableGhostsAnywhere;
-
-        this.uiManager.updateLocationStatus(data, isAtLocation);
-
-        // Set target location for GhostManager
-        // Calculate relative position based on direction and distance from current user position
-        const targetPosition = this.calculateTargetWorldPosition(data);
-        this.ghostManager.setTargetLocation(targetPosition);
-
-        if (shouldShowGhosts && !this.ghostManager.isActive) {
-            this.ghostManager.activate();
-        } else if (!shouldShowGhosts && this.ghostManager.isActive) {
-            this.ghostManager.deactivate();
-        }
-    }
-
-    calculateTargetWorldPosition(locationData) {
-        // Convert GPS coordinates to world space relative to camera
-        // Using simple latitude/longitude to meters conversion
-        const R = 6371000; // Earth's radius in meters
-
-        // Convert lat/lng differences to meters
-        const dLat = (locationData.targetLat - locationData.currentLat) * Math.PI / 180;
-        const dLng = (locationData.targetLng - locationData.currentLng) * Math.PI / 180;
-
-        const y = dLat * R; // North-South (z in 3D)
-        const x = dLng * R * Math.cos((locationData.currentLat) * Math.PI / 180); // East-West (x in 3D)
-
-        // Place target in world space relative to camera
-        const targetPos = new THREE.Vector3(x, 0, y);
-        targetPos.add(this.camera.position); // Relative to camera position
-
-        return targetPos;
-    }
-
     setupEventListeners() {
-        // Toggle ghosts anywhere
-        document.getElementById('toggleButton').addEventListener('click', () => {
-            this.enableGhostsAnywhere = !this.enableGhostsAnywhere;
-            document.getElementById('toggleButton').classList.toggle('active');
+        // Toggle custom house
+        const toggleButton = document.getElementById('toggleButton');
+        if (toggleButton) {
+            toggleButton.addEventListener('click', () => {
+                this.openAddressModal();
+            });
+        }
 
-            if (this.enableGhostsAnywhere) {
-                this.ghostManager.activate();
-            }
-        });
+        // Address modal handlers
+        const addressModal = document.getElementById('addressModal');
+        const confirmBtn = document.getElementById('confirmAddress');
+        const cancelBtn = document.getElementById('cancelAddress');
+        const addressInput = document.getElementById('addressInput');
 
-        // Raycaster for ghost interaction
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => {
+                this.confirmCustomAddress();
+            });
+        }
+
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                this.closeAddressModal();
+            });
+        }
+
+        if (addressInput) {
+            addressInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.confirmCustomAddress();
+                }
+            });
+        }
+
+        // Ghost interaction - raycaster for clicking ghosts
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
         window.addEventListener('click', (event) => {
             // Ignore UI clicks
-            if (event.target.closest('.ui-top, .stats-panel, .combo-counter, .instruction-overlay')) {
+            if (event.target.closest('#toggleButton, #ar-button, .modal-overlay, input, .score-display, .location-status')) {
                 return;
             }
 
@@ -180,13 +156,115 @@ class HalloweenGhostHouse {
                 if (ghost) {
                     ghost.scare();
                     this.gameManager.onGhostScared();
-                    this.uiManager.updateStats(this.gameManager.getStats());
+                    this.uiManager.updateScore(this.gameManager.getStats().scaresCount);
                 }
             }
         });
 
         // Window resize
         window.addEventListener('resize', () => this.onWindowResize());
+    }
+
+    openAddressModal() {
+        const modal = document.getElementById('addressModal');
+        const input = document.getElementById('addressInput');
+        if (modal) {
+            modal.classList.add('active');
+            if (input) input.focus();
+        }
+    }
+
+    closeAddressModal() {
+        const modal = document.getElementById('addressModal');
+        if (modal) {
+            modal.classList.remove('active');
+        }
+    }
+
+    confirmCustomAddress() {
+        const input = document.getElementById('addressInput');
+        if (!input || !input.value.trim()) {
+            alert('Please enter an address or coordinates');
+            return;
+        }
+
+        const address = input.value.trim();
+
+        // Try to parse as coordinates (lat,lng)
+        const coordMatch = address.match(/^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/);
+        if (coordMatch) {
+            const lat = parseFloat(coordMatch[1]);
+            const lng = parseFloat(coordMatch[2]);
+            this.setCustomLocation(lat, lng, address);
+            this.closeAddressModal();
+            input.value = '';
+            return;
+        }
+
+        // For addresses, we'd need a geocoding API
+        // For now, show a simple alert
+        alert('Direct address lookup not yet implemented. Please use coordinates format: "40.7128,-74.0060"');
+    }
+
+    setCustomLocation(lat, lng, label) {
+        this.customLocation = { lat, lng, label };
+        this.ghostManager.setCustomLocation(lat, lng);
+        this.uiManager.updateLocationStatus({
+            distance: 0,
+            address: label || `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+        }, true);
+        console.log('Custom location set:', label);
+    }
+
+    onLocationUpdate(data) {
+        // Only update location if not using custom location
+        if (!this.customLocation) {
+            const isAtLocation = data.distance < 50; // 50 meters from target
+            this.uiManager.updateLocationStatus(data, isAtLocation);
+
+            // Set target location for GhostManager
+            const targetPosition = this.calculateTargetWorldPosition(data);
+            this.ghostManager.setTargetLocation(targetPosition);
+
+            if (isAtLocation && !this.ghostManager.isActive) {
+                this.ghostManager.activate();
+            } else if (!isAtLocation && this.ghostManager.isActive) {
+                this.ghostManager.deactivate();
+            }
+        }
+    }
+
+    calculateTargetWorldPosition(locationData) {
+        // Convert GPS coordinates to world space relative to camera
+        const R = 6371000; // Earth's radius in meters
+
+        const dLat = (locationData.targetLat - locationData.currentLat) * Math.PI / 180;
+        const dLng = (locationData.targetLng - locationData.currentLng) * Math.PI / 180;
+
+        const y = dLat * R; // North-South (z in 3D)
+        const x = dLng * R * Math.cos((locationData.currentLat) * Math.PI / 180); // East-West (x in 3D)
+
+        const targetPos = new THREE.Vector3(x, 0, y);
+        targetPos.add(this.camera.position);
+
+        return targetPos;
+    }
+
+    animate() {
+        this.renderer.setAnimationLoop((time, frame) => {
+            const deltaTime = 0.016; // ~60fps
+
+            // Update ghost manager
+            if (this.ghostManager.isActive) {
+                this.ghostManager.update(deltaTime, this.camera);
+            }
+
+            // Update game manager
+            this.gameManager.update(deltaTime);
+
+            // Render
+            this.renderer.render(this.scene, this.camera);
+        });
     }
 
     onWindowResize() {
@@ -197,41 +275,9 @@ class HalloweenGhostHouse {
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(width, height);
     }
-
-    animate() {
-        this.renderer.setAnimationLoop((time, frame) => {
-            const deltaTime = 0.016; // ~60fps
-
-            // Update managers
-            if (this.ghostManager.isActive) {
-                this.ghostManager.update(deltaTime, this.camera);
-            }
-
-            // Update game manager
-            this.gameManager.update(deltaTime);
-
-            // Update ghost tracker HUD with creeping ghosts
-            const creepingGhosts = this.ghostManager.getCreepingGhosts(this.camera);
-            this.uiManager.updateGhostTracker(creepingGhosts, this.camera);
-
-            // Render - works with both XR and non-XR
-            if (this.arManager.isARActive && frame) {
-                // XR rendering handled by WebXR
-                this.renderer.render(this.scene, this.camera);
-            } else {
-                // Fallback regular rendering
-                this.renderer.render(this.scene, this.camera);
-            }
-        });
-    }
 }
 
 // Initialize when DOM is ready
-window.closeInstructions = function() {
-    const overlay = document.getElementById('instructionOverlay');
-    overlay.style.display = 'none';
-};
-
 document.addEventListener('DOMContentLoaded', () => {
     const app = new HalloweenGhostHouse();
     app.init();

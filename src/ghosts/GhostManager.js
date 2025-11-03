@@ -20,10 +20,9 @@ const GHOST_MANAGER_CONFIG = {
 };
 
 export class GhostManager {
-    constructor(scene, gameManager, audioManager) {
+    constructor(scene, gameManager) {
         this.scene = scene;
         this.gameManager = gameManager;
-        this.audioManager = audioManager;
 
         this.ghosts = [];
         this.isActive = false;
@@ -44,6 +43,13 @@ export class GhostManager {
 
     setTargetLocation(targetPosition) {
         this.targetLocationPosition.copy(targetPosition);
+    }
+
+    setCustomLocation(lat, lng) {
+        // For custom locations, place ghosts at a fixed distance from camera
+        // This allows the experience to work anywhere
+        this.targetLocationPosition.set(0, 0, -15); // 15 meters in front of camera
+        this.activate(); // Automatically activate when custom location is set
     }
 
     activate() {
@@ -72,18 +78,10 @@ export class GhostManager {
             this.spawnTimer = this.spawnRate;
         }
 
-        // Count creeping ghosts for audio
-        let creepingGhostCount = 0;
-
         // Update all ghosts
         for (let i = this.ghosts.length - 1; i >= 0; i--) {
             const ghost = this.ghosts[i];
             ghost.update(deltaTime, camera);
-
-            // Count creeping ghosts
-            if (ghost.isCreeping()) {
-                creepingGhostCount++;
-            }
 
             // Remove ghosts that are too far away from the target location
             const distToTargetLocation = ghost.getPosition().distanceTo(this.targetLocationPosition);
@@ -92,9 +90,6 @@ export class GhostManager {
                 this.ghosts.splice(i, 1);
             }
         }
-
-        // Update creeping audio based on number of ghosts approaching
-        this.audioManager?.updateCreepingAudio(creepingGhostCount);
     }
 
     /**
@@ -143,9 +138,6 @@ export class GhostManager {
         const ghost = new Ghost(position, this.ghosts.length);
         this.scene.add(ghost.getMesh());
         this.ghosts.push(ghost);
-
-        // Play spawn sound
-        this.audioManager?.playSound('spawn');
     }
 
     getGhostByMesh(mesh) {
@@ -167,18 +159,5 @@ export class GhostManager {
 
     getScaredGhosts() {
         return this.ghosts.filter(g => g.isScared()).length;
-    }
-
-    /**
-     * Get all creeping ghosts with their directional information for HUD rendering
-     */
-    getCreepingGhosts(camera) {
-        return this.ghosts
-            .filter(g => g.isCreeping())
-            .map(g => ({
-                ghost: g,
-                direction: g.getDirectionToGhost(camera),
-                distance: g.getPosition().distanceTo(camera.position)
-            }));
     }
 }

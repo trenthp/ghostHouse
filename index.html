@@ -36,6 +36,7 @@
             z-index: 100;
         }
 
+        /* Top UI Section */
         .ui-top {
             position: absolute;
             top: 20px;
@@ -45,6 +46,7 @@
             justify-content: space-between;
             align-items: center;
             pointer-events: auto;
+            gap: 10px;
         }
 
         .location-status {
@@ -66,11 +68,52 @@
             color: #f97316;
         }
 
-        .toggle-button {
+        /* Bottom UI Section */
+        .ui-bottom {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: auto;
+        }
+
+        .score-display {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 150px;
+        }
+
+        .score-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .score-label {
+            color: #888;
+        }
+
+        .score-value {
+            color: #4ade80;
+            font-weight: bold;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            padding: 10px 16px;
             background: rgba(139, 69, 19, 0.9);
             color: #fff;
             border: 2px solid #ff6b35;
-            padding: 10px 16px;
             border-radius: 8px;
             cursor: pointer;
             font-size: 13px;
@@ -81,132 +124,120 @@
             pointer-events: auto;
         }
 
-        .toggle-button:hover {
+        button:hover {
             background: rgba(255, 107, 53, 0.8);
             transform: scale(1.05);
         }
 
-        .toggle-button:active {
+        button:active {
             transform: scale(0.95);
         }
 
-        .toggle-button.active {
+        button.active {
             background: #4ade80;
             border-color: #4ade80;
             color: #000;
         }
 
-        .stats-panel {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 16px;
-            border-radius: 8px;
-            font-size: 14px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            min-width: 200px;
-            pointer-events: auto;
-        }
-
-        .stat-row {
-            display: flex;
-            justify-content: space-between;
-            margin: 8px 0;
-        }
-
-        .stat-label {
-            color: #888;
-        }
-
-        .stat-value {
-            color: #4ade80;
-            font-weight: bold;
-        }
-
-        .combo-counter {
-            position: absolute;
-            bottom: 20px;
+        /* AR Button */
+        #ar-button {
+            position: fixed;
+            top: 20px;
             right: 20px;
-            text-align: right;
-            pointer-events: auto;
-        }
-
-        .combo-number {
-            font-size: 48px;
-            font-weight: bold;
-            color: #ff6b35;
-            text-shadow: 0 0 10px #ff6b35;
-        }
-
-        .combo-number.pulse-combo {
-            animation: pulse 0.3s ease-out;
-        }
-
-        .combo-text {
-            color: #ff6b35;
-            font-size: 14px;
-            text-transform: uppercase;
-        }
-
-        @keyframes pulse {
-            0% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.2);
-            }
-            100% {
-                transform: scale(1);
-            }
-        }
-
-        .instruction-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            pointer-events: auto;
-            z-index: 200;
-        }
-
-        .instruction-box {
-            background: rgba(0, 0, 0, 0.9);
-            padding: 30px;
-            border-radius: 12px;
-            border: 2px solid #ff6b35;
-            max-width: 300px;
-        }
-
-        .instruction-box h2 {
-            color: #ff6b35;
-            margin-bottom: 15px;
-            font-size: 24px;
-            text-shadow: 0 0 10px #ff6b35;
-        }
-
-        .instruction-box p {
-            font-size: 14px;
-            line-height: 1.6;
-            margin: 10px 0;
-        }
-
-        .close-instruction {
             background: #ff6b35;
-            color: #000;
             border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            margin-top: 15px;
-            font-weight: bold;
-            text-transform: uppercase;
+            padding: 12px 20px;
+            font-size: 14px;
+            pointer-events: auto;
+            z-index: 150;
         }
 
-        .close-instruction:hover {
+        #ar-button:hover {
             background: #ff8a5b;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            pointer-events: auto;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        .modal-content h2 {
+            color: #ff6b35;
+            margin-bottom: 16px;
+            font-size: 20px;
+        }
+
+        .modal-content p {
+            margin-bottom: 16px;
+            font-size: 14px;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 10px;
+            margin: 12px 0;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 14px;
+        }
+
+        .modal-content input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .modal-content input:focus {
+            outline: none;
+            border-color: #ff6b35;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            margin: 0;
+        }
+
+        .modal-buttons button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .modal-buttons button.secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
         }
 
         .indicator {
@@ -226,157 +257,31 @@
             background: #f97316;
         }
 
-        /* AR Button Styles */
-        #ar-button {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            padding: 12px 20px;
-            background: #ff6b35;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            z-index: 150;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(255, 107, 53, 0.3);
-        }
-
-        #ar-button:hover {
-            background: #ff8a5b;
-            box-shadow: 0 6px 12px rgba(255, 107, 53, 0.5);
-            transform: translateY(-2px);
-        }
-
-        #ar-button:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 4px rgba(255, 107, 53, 0.3);
-        }
-
-        /* AR Permission Modal Styles */
-        #ar-permission-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            animation: fadeIn 0.3s ease;
-        }
-
-        #ar-permission-modal > div {
-            background: #1a1a2e;
-            border-radius: 12px;
-            padding: 24px;
-            max-width: 400px;
-            text-align: center;
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            animation: slideUp 0.3s ease;
-        }
-
-        #ar-permission-modal h2 {
-            margin: 0 0 12px 0;
-            font-size: 20px;
-            font-weight: bold;
-            color: #ff6b35;
-        }
-
-        #ar-permission-modal p {
-            margin: 0 0 24px 0;
-            font-size: 14px;
-            line-height: 1.5;
-            color: rgba(255, 255, 255, 0.9);
-        }
-
-        #ar-permission-modal > div > div {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-        }
-
-        #ar-permission-modal button {
-            padding: 10px 16px;
-            background: #ff6b35;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        #ar-permission-modal button:hover {
-            background: #ff8a5b;
-            transform: translateY(-1px);
-        }
-
-        #ar-permission-modal button:active {
-            transform: translateY(0);
-        }
-
-        #ar-permission-modal button[style*="rgba(255, 255, 255, 0.1)"] {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-        }
-
-        #ar-permission-modal button[style*="rgba(255, 255, 255, 0.1)"]:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.5);
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
-
-        @keyframes slideUp {
-            from {
-                transform: translateY(20px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
         @media (max-width: 600px) {
             .ui-top {
                 flex-direction: column;
-                gap: 10px;
+                align-items: flex-start;
             }
 
-            .stats-panel {
+            .location-status {
                 font-size: 12px;
-                padding: 12px;
-            }
-
-            .combo-number {
-                font-size: 36px;
+                padding: 10px 12px;
             }
 
             #ar-button {
-                top: 60px;
-                right: 10px;
-                left: auto;
                 padding: 10px 16px;
                 font-size: 12px;
+                top: 10px;
+                right: 10px;
             }
 
-            #ar-permission-modal > div {
+            .score-display {
+                font-size: 12px;
+                padding: 12px;
+                min-width: auto;
+            }
+
+            .modal-content {
                 max-width: 85vw;
                 padding: 16px;
             }
@@ -387,45 +292,41 @@
     <canvas id="canvas"></canvas>
 
     <div class="ui-container">
+        <!-- Top: Location Status -->
         <div class="ui-top">
             <div class="location-status" id="locationStatus">
                 <span class="indicator" id="locationIndicator"></span>
                 <span id="locationText">Calculating...</span>
             </div>
-            <button class="toggle-button" id="toggleButton">Enable Ghosts Anywhere</button>
         </div>
 
-        <div class="stats-panel">
-            <div class="stat-row">
-                <span class="stat-label">Ghosts Scared:</span>
-                <span class="stat-value" id="scaresCount">0</span>
+        <!-- Bottom: Score and Controls -->
+        <div class="ui-bottom">
+            <div class="score-display">
+                <div class="score-row">
+                    <span class="score-label">Ghosts Scared:</span>
+                    <span class="score-value" id="scaresCount">0</span>
+                </div>
             </div>
-            <div class="stat-row">
-                <span class="stat-label">Current Ghosts:</span>
-                <span class="stat-value" id="ghostCount">0</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">Combo:</span>
-                <span class="stat-value" id="comboStat">0x</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">High Score:</span>
-                <span class="stat-value" id="highScore">0</span>
+            <div class="control-buttons">
+                <button id="toggleButton">⚙️ Custom House</button>
             </div>
         </div>
+    </div>
 
-        <div class="combo-counter">
-            <div class="combo-number" id="comboDisplay" style="display: none;">0x</div>
-            <div class="combo-text" id="comboLabel" style="display: none;">COMBO!</div>
-        </div>
+    <!-- AR Button -->
+    <button id="ar-button">📷 Start AR</button>
 
-        <div class="instruction-overlay" id="instructionOverlay">
-            <div class="instruction-box">
-                <h2>🎃 Ghost House AR 👻</h2>
-                <p>Welcome to the Halloween Ghost House!</p>
-                <p>Tap on ghosts to scare them away</p>
-                <p style="margin-top: 20px; font-size: 12px; color: #888;">Location detection: <span id="instrLocation">Loading...</span></p>
-                <button class="close-instruction" onclick="closeInstructions()">Start Experience</button>
+    <!-- Address Modal -->
+    <div class="modal-overlay" id="addressModal">
+        <div class="modal-content">
+            <h2>🏚️ Enter Ghost House Location</h2>
+            <p>Specify the address or coordinates for your haunted house</p>
+            <input type="text" id="addressInput" placeholder="Address or 'lat,lng'" autocomplete="off">
+            <p style="font-size: 12px; color: #888;">Examples: "123 Main St, Springfield" or "40.7128,-74.0060"</p>
+            <div class="modal-buttons">
+                <button id="confirmAddress">Confirm</button>
+                <button class="secondary" id="cancelAddress">Cancel</button>
             </div>
         </div>
     </div>
