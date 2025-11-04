@@ -15,7 +15,7 @@ export class AudioManager {
 
     initAudioContext() {
         try {
-            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            this.audioContext = new window.AudioContext();
         } catch (e) {
             console.debug('AudioContext not available:', e.message);
         }
@@ -74,7 +74,7 @@ export class AudioManager {
         }
 
         try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const ctx = new window.AudioContext();
             this.audioContext = ctx;
             return ctx;
         } catch (e) {

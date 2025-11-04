@@ -4,6 +4,7 @@ import { GhostManager } from './ghosts/GhostManager.js';
 import { LocationManager } from './location/LocationManager.js';
 import { GameManager } from './game/GameManager.js';
 import { UIManager } from './ui/UIManager.js';
+import { ModalManager } from './ui/ModalManager.js';
 
 class HalloweenGhostHouse {
     constructor() {
@@ -16,6 +17,7 @@ class HalloweenGhostHouse {
         this.locationManager = null;
         this.gameManager = null;
         this.uiManager = null;
+        this.modalManager = null;
 
         this.isRunning = false;
         this.arStarted = false; // Don't spawn ghosts until AR is started
@@ -33,6 +35,10 @@ class HalloweenGhostHouse {
             this.locationManager = new LocationManager();
             this.ghostManager = new GhostManager(this.scene, this.gameManager);
             this.arManager = new ARManager(this.scene, this.renderer, this.camera, () => this.onARStarted());
+            this.modalManager = new ModalManager();
+
+            // Register modals
+            this.registerModals();
 
             // Check WebXR support
             const supportsWebXR = navigator.xr !== undefined;
@@ -54,7 +60,7 @@ class HalloweenGhostHouse {
             this.isRunning = true;
 
             // Show AR intro modal on load
-            setTimeout(() => this.showARIntroModal(), 500);
+            setTimeout(() => this.modalManager.show('arIntroModal'), 500);
         } catch (error) {
             console.error('Failed to initialize:', error);
             this.uiManager.showError('Failed to initialize AR experience');
@@ -102,20 +108,64 @@ class HalloweenGhostHouse {
         window.addEventListener('resize', () => this.onWindowResize());
     }
 
+    registerModals() {
+        // Register all modals with the modal manager
+        const arIntroModal = document.getElementById('arIntroModal');
+        const locationSelectionModal = document.getElementById('locationSelectionModal');
+        const addressModal = document.getElementById('addressModal');
+
+        if (arIntroModal) this.modalManager.registerModal('arIntroModal', arIntroModal);
+        if (locationSelectionModal) this.modalManager.registerModal('locationSelectionModal', locationSelectionModal);
+        if (addressModal) this.modalManager.registerModal('addressModal', addressModal);
+    }
+
     setupEventListeners() {
         // AR intro modal handlers
         const startGhostHouseBtn = document.getElementById('startGhostHouseButton');
         const hauntCustomHouseBtn = document.getElementById('hauntCustomHouseButton');
         if (startGhostHouseBtn) {
             startGhostHouseBtn.addEventListener('click', () => {
-                this.closeARIntroModal();
+                this.modalManager.hide('arIntroModal');
                 this.arManager?.initiateARPermissions();
             });
         }
         if (hauntCustomHouseBtn) {
             hauntCustomHouseBtn.addEventListener('click', () => {
-                this.closeARIntroModal();
-                this.openAddressModal();
+                this.modalManager.hide('arIntroModal');
+                this.modalManager.show('locationSelectionModal');
+            });
+        }
+
+        // Location selection modal handlers
+        const enterLocationBtn = document.getElementById('enterLocationButton');
+        const hauntCurrentLocationBtn = document.getElementById('hauntCurrentLocationButton');
+        const cancelLocationSelectionBtn = document.getElementById('cancelLocationSelection');
+
+        if (enterLocationBtn) {
+            enterLocationBtn.addEventListener('click', () => {
+                this.modalManager.hide('locationSelectionModal');
+                this.modalManager.show('addressModal');
+                // Focus input field after modal is shown
+                setTimeout(() => {
+                    const input = document.getElementById('addressInput');
+                    if (input) input.focus();
+                }, 0);
+            });
+        }
+
+        if (hauntCurrentLocationBtn) {
+            hauntCurrentLocationBtn.addEventListener('click', () => {
+                this.modalManager.hide('locationSelectionModal');
+                // Clear any custom location so we use current GPS location
+                this.customLocation = null;
+                this.arManager?.initiateARPermissions();
+            });
+        }
+
+        if (cancelLocationSelectionBtn) {
+            cancelLocationSelectionBtn.addEventListener('click', () => {
+                this.modalManager.hide('locationSelectionModal');
+                this.modalManager.show('arIntroModal');
             });
         }
 
@@ -128,7 +178,6 @@ class HalloweenGhostHouse {
         }
 
         // Address modal handlers
-        const addressModal = document.getElementById('addressModal');
         const confirmBtn = document.getElementById('confirmAddress');
         const cancelBtn = document.getElementById('cancelAddress');
         const addressInput = document.getElementById('addressInput');
@@ -141,11 +190,11 @@ class HalloweenGhostHouse {
 
         if (cancelBtn) {
             cancelBtn.addEventListener('click', () => {
-                this.closeAddressModal();
+                this.modalManager.hide('addressModal');
                 if (addressInput) {
                     addressInput.value = '';
                 }
-                this.showARIntroModal();
+                this.modalManager.show('locationSelectionModal');
             });
         }
 
@@ -163,7 +212,7 @@ class HalloweenGhostHouse {
 
         window.addEventListener('click', (event) => {
             // Ignore UI clicks
-            if (event.target.closest('#restartButton, #startGhostHouseButton, #hauntCustomHouseButton, #ar-button, .modal-overlay, input, .score-display, .location-status')) {
+            if (event.target.closest('#restartButton, #startGhostHouseButton, #hauntCustomHouseButton, #enterLocationButton, #hauntCurrentLocationButton, #cancelLocationSelection, #ar-button, .modal-overlay, input, .score-display, .location-status')) {
                 return;
             }
 
@@ -189,36 +238,6 @@ class HalloweenGhostHouse {
         window.addEventListener('resize', () => this.onWindowResize());
     }
 
-    showARIntroModal() {
-        const modal = document.getElementById('arIntroModal');
-        if (modal) {
-            modal.classList.add('active');
-        }
-    }
-
-    closeARIntroModal() {
-        const modal = document.getElementById('arIntroModal');
-        if (modal) {
-            modal.classList.remove('active');
-        }
-    }
-
-    openAddressModal() {
-        const modal = document.getElementById('addressModal');
-        const input = document.getElementById('addressInput');
-        if (modal) {
-            modal.classList.add('active');
-            if (input) input.focus();
-        }
-    }
-
-    closeAddressModal() {
-        const modal = document.getElementById('addressModal');
-        if (modal) {
-            modal.classList.remove('active');
-        }
-    }
-
     confirmCustomAddress() {
         const input = document.getElementById('addressInput');
         if (!input || !input.value.trim()) {
@@ -241,7 +260,7 @@ class HalloweenGhostHouse {
             }
 
             this.setCustomLocation(lat, lng, `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-            this.closeAddressModal();
+            this.modalManager.hide('addressModal');
             input.value = '';
 
             // Initiate AR permissions after setting custom location
@@ -280,17 +299,15 @@ class HalloweenGhostHouse {
             addressInput.value = '';
         }
 
-        // Close any open modals
-        this.closeAddressModal();
+        // Close any open modals and show intro modal
+        this.modalManager.hideAll();
+        this.modalManager.show('arIntroModal');
 
         // Reset location status to default
         this.uiManager.updateLocationStatus({
             distance: 0,
             address: 'Calculating...'
         }, false);
-
-        // Show intro modal
-        this.showARIntroModal();
 
         console.log('Experience reset - showing intro modal');
     }

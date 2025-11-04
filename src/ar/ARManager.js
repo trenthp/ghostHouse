@@ -1,46 +1,7 @@
 import * as THREE from 'three';
+import { APP_CONFIG } from '../config/AppConfig.js';
 
-// AR configuration constants
-const AR_CONFIG = {
-    // UI
-    BUTTON_TEXT: '📷 Start AR',
-    BUTTON_TOP: '80px',
-    BUTTON_RIGHT: '20px',
-    BUTTON_PADDING: '12px 20px',
-    BUTTON_COLOR: '#ff6b35',
-    BUTTON_BORDER_RADIUS: '8px',
-    BUTTON_FONT_SIZE: '14px',
-    BUTTON_Z_INDEX: 150,
-
-    // Modal
-    MODAL_MAX_WIDTH: '400px',
-    MODAL_PADDING: '24px',
-    MODAL_BORDER_RADIUS: '12px',
-    MODAL_BG_COLOR: '#1a1a2e',
-    MODAL_TEXT_COLOR: 'white',
-    MODAL_Z_INDEX: 1000,
-    MODAL_BORDER_COLOR: 'rgba(255, 255, 255, 0.1)',
-    MODAL_OVERLAY_BG: 'rgba(0, 0, 0, 0.7)',
-
-    // Button sizes
-    BUTTON_PADDING_VERTICAL: '10px',
-    BUTTON_PADDING_HORIZONTAL: '16px',
-    BUTTON_BORDER_RADIUS_SMALL: '6px',
-    BUTTON_FONT_SIZE_SMALL: '14px',
-
-    // Permission messages
-    PERMISSION_TITLE_NOT_SUPPORTED: 'AR Not Supported',
-    PERMISSION_MSG_NOT_SUPPORTED: 'AR is not available on your device. Please ensure you have a compatible device with AR capabilities.',
-    PERMISSION_TITLE_CAMERA: 'Camera Access Required',
-    PERMISSION_MSG_CAMERA: 'To experience the spooky haunted house in AR, we need access to your camera. Your location may also be used to show ghosts near the target house. We do not store or share your data.',
-    PERMISSION_TITLE_DENIED: 'Permission Denied',
-    PERMISSION_MSG_DENIED: 'AR access was not granted. Please enable camera permissions in your device settings and try again.',
-
-    // Buttons
-    BUTTON_TEXT_CONTINUE: 'Continue to AR',
-    BUTTON_TEXT_CANCEL: 'Cancel',
-    BUTTON_TEXT_CLOSE: 'Close',
-};
+const AR_CONFIG = APP_CONFIG.ar;
 
 export class ARManager {
     constructor(scene, renderer, camera, onARStarted) {
@@ -54,67 +15,11 @@ export class ARManager {
         this.hasAttemptedAR = false;
         this.permissionState = 'pending'; // pending, checking, accepted, denied
 
-        // Platform detection
-        this.isIOS = this.detectIOS();
-        this.isSecureContext = window.isSecureContext;
-
         this.checkARSupport();
-    }
-
-    /**
-     * Detect if user is on iOS device
-     */
-    detectIOS() {
-        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-        return /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
-    }
-
-    /**
-     * Get iOS version (if applicable)
-     * Returns version number or null if not iOS
-     */
-    getIOSVersion() {
-        if (!this.isIOS) return null;
-
-        const match = navigator.userAgent.match(/OS (\d+)_(\d+)_?(\d+)?/);
-        if (match) {
-            const major = parseInt(match[1], 10);
-            const minor = parseInt(match[2], 10);
-            const patch = match[3] ? parseInt(match[3], 10) : 0;
-            return { major, minor, patch };
-        }
-        return null;
-    }
-
-    /**
-     * Check if iOS version supports WebXR (iOS 14+)
-     */
-    supportsWebXRonIOS() {
-        const version = this.getIOSVersion();
-        if (!version) return false;
-        return version.major >= 14;
     }
 
     checkARSupport() {
         console.log('Checking WebXR support...');
-
-        // Log platform info
-        if (this.isIOS) {
-            const version = this.getIOSVersion();
-            if (version) {
-                console.log(`📱 iOS ${version.major}.${version.minor}.${version.patch} detected`);
-            } else {
-                console.log('📱 iOS device detected');
-            }
-
-            if (!this.isSecureContext) {
-                console.warn('⚠️  HTTPS is required for WebXR on iOS. Current: ' + window.location.protocol);
-            }
-
-            if (!this.supportsWebXRonIOS()) {
-                console.warn('⚠️  iOS 14 or later is required for WebXR');
-            }
-        }
 
         if (!navigator.xr) {
             console.warn('❌ WebXR API not available on this browser');
@@ -130,9 +35,6 @@ export class ARManager {
 
                 if (supported) {
                     console.log('✅ AR is available!');
-                    if (this.isIOS) {
-                        console.log('✅ iOS WebXR support confirmed (iOS 14+)');
-                    }
                 } else {
                     console.log('⚠️  immersive-ar not directly supported. Checking for inline session...');
                     // Try inline session as fallback
@@ -160,39 +62,19 @@ export class ARManager {
             return;
         }
 
-        // Check HTTPS on iOS
-        if (this.isIOS && !this.isSecureContext) {
-            this.showPermissionModal(
-                'HTTPS Required',
-                'AR on iOS requires a secure connection (HTTPS). Please access this site using HTTPS.',
-                false
-            );
-            return;
-        }
-
         if (!this.isARSupported) {
             console.error('AR not supported on this device');
-            const notSupportedMsg = this.isIOS
-                ? 'AR requires iOS 14 or later. Please update your device or use Safari browser.'
-                : cfg.PERMISSION_MSG_NOT_SUPPORTED;
-
             this.showPermissionModal(
                 cfg.PERMISSION_TITLE_NOT_SUPPORTED,
-                notSupportedMsg,
+                cfg.PERMISSION_MSG_NOT_SUPPORTED,
                 false
             );
             return;
-        }
-
-        // Customize message for iOS
-        let cameraMsg = cfg.PERMISSION_MSG_CAMERA;
-        if (this.isIOS) {
-            cameraMsg = 'To experience the spooky haunted house in AR, we need access to your camera and location. Your data is never stored or shared. You can manage permissions in Settings > Safari > Websites.';
         }
 
         this.showPermissionModal(
             cfg.PERMISSION_TITLE_CAMERA,
-            cameraMsg,
+            cfg.PERMISSION_MSG_CAMERA,
             true
         );
     }
@@ -285,12 +167,6 @@ export class ARManager {
             // Only set domOverlay if requesting the feature
             if (sessionInit.optionalFeatures.includes('dom-overlay')) {
                 sessionInit.domOverlay = { root: document.body };
-            }
-
-            // iOS-specific optimizations
-            if (this.isIOS) {
-                console.log('📱 Using iOS-optimized AR session parameters');
-                // iOS handles these features internally through ARKit
             }
 
             this.xrSession = await navigator.xr.requestSession('immersive-ar', sessionInit);

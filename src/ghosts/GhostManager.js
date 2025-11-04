@@ -1,23 +1,8 @@
 import * as THREE from 'three';
 import { Ghost } from './Ghost.js';
+import { APP_CONFIG } from '../config/AppConfig.js';
 
-// Ghost Manager configuration constants
-const GHOST_MANAGER_CONFIG = {
-    // Spawning
-    MAX_GHOSTS: 8, // Maximum concurrent ghosts (reduced from 15 for performance)
-    SPAWN_RATE: 2, // seconds between ghost spawns
-    SPAWN_HEIGHT_BASE: 0.8, // base height for ghost spawning (eye level - camera is at 1.6m)
-    SPAWN_HEIGHT_VARIANCE: 0.6, // small variance around eye level
-
-    // Spawn distance (relative to target location)
-    SPAWN_RADIUS: 2, // 2 meters radius around target (tight cluster)
-    MIN_SPAWN_DISTANCE: 0.5, // Minimum 0.5 meters from target location
-    MAX_SPAWN_DISTANCE: 2, // Maximum 2 meters from target location
-    SPAWN_POSITION_ATTEMPTS: 10, // Max attempts to find valid spawn position
-
-    // Visibility
-    VISIBILITY_RADIUS: 50, // meters - remove ghosts beyond this distance from target
-};
+const GHOST_MANAGER_CONFIG = APP_CONFIG.ghostManager;
 
 export class GhostManager {
     constructor(scene, gameManager) {
@@ -86,6 +71,23 @@ export class GhostManager {
     }
 
     /**
+     * Generate a random spawn position around the target location
+     * @returns {THREE.Vector3} - A random position within spawn radius
+     */
+    generateSpawnPosition() {
+        const cfg = GHOST_MANAGER_CONFIG;
+        const angle = Math.random() * Math.PI * 2;
+        const distance = this.minSpawnDistance + Math.random() * (this.maxSpawnDistance - this.minSpawnDistance);
+        const height = this.spawnHeight + Math.random() * cfg.SPAWN_HEIGHT_VARIANCE;
+
+        return new THREE.Vector3(
+            this.targetLocationPosition.x + Math.cos(angle) * distance,
+            height,
+            this.targetLocationPosition.z + Math.sin(angle) * distance
+        );
+    }
+
+    /**
      * Spawn a ghost at a safe distance from the camera
      * Ghosts spawn between minSpawnDistance and maxSpawnDistance from the user
      */
@@ -96,15 +98,7 @@ export class GhostManager {
 
         // Try to find a safe spawn position
         while (attempts < cfg.SPAWN_POSITION_ATTEMPTS) {
-            const angle = Math.random() * Math.PI * 2;
-            const distance = this.minSpawnDistance + Math.random() * (this.maxSpawnDistance - this.minSpawnDistance);
-            const height = this.spawnHeight + Math.random() * cfg.SPAWN_HEIGHT_VARIANCE;
-
-            position = new THREE.Vector3(
-                this.targetLocationPosition.x + Math.cos(angle) * distance,
-                height,
-                this.targetLocationPosition.z + Math.sin(angle) * distance
-            );
+            position = this.generateSpawnPosition();
 
             // Check distance from camera - ensure safe minimum distance
             const distFromCamera = position.distanceTo(camera.position);
@@ -116,16 +110,9 @@ export class GhostManager {
             attempts++;
         }
 
-        // If no valid position found after max attempts, use the last generated one anyway
+        // If no valid position found after max attempts, use a generated position anyway
         if (position === null) {
-            const angle = Math.random() * Math.PI * 2;
-            const distance = this.minSpawnDistance + Math.random() * (this.maxSpawnDistance - this.minSpawnDistance);
-            const height = this.spawnHeight + Math.random() * cfg.SPAWN_HEIGHT_VARIANCE;
-            position = new THREE.Vector3(
-                this.targetLocationPosition.x + Math.cos(angle) * distance,
-                height,
-                this.targetLocationPosition.z + Math.sin(angle) * distance
-            );
+            position = this.generateSpawnPosition();
         }
 
         const ghost = new Ghost(position, this.ghosts.length);

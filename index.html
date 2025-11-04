@@ -198,6 +198,11 @@
             color: rgba(255, 255, 255, 0.9);
         }
 
+        .modal-content a {
+            color: #999999;
+            text-decoration: underline;
+        }
+
         .modal-content input {
             width: 100%;
             padding: 10px;
@@ -313,16 +318,29 @@
         </div>
     </div>
 
+    <!-- Location Selection Modal -->
+    <div class="modal-overlay" id="locationSelectionModal">
+        <div class="modal-content">
+            <h2>🏚️ Haunt a New House</h2>
+            <p>How would you like to haunt?</p>
+            <div class="modal-buttons">
+                <button id="enterLocationButton">📍 Enter Location</button>
+                <button id="hauntCurrentLocationButton">🎯 Use Current Location</button>
+                <button class="secondary" id="cancelLocationSelection">Go back</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Address Modal -->
     <div class="modal-overlay" id="addressModal">
         <div class="modal-content">
             <h2>🏚️ Enter Haunted House Location</h2>
             <p>Enter coordinates for your haunted house</p>
             <input type="text" id="addressInput" placeholder="e.g., 40.7128,-74.0060" autocomplete="off">
-            <p style="font-size: 12px; color: #888;">Find coordinates: right-click a location on Google Maps and select "What's here?"</p>
+            <p style="font-size: 12px; color: #888;">Find coordinates: right-click a location on <a href="https://www.google.com/maps">Google Maps</a> and select "What's here?"</p>
             <div class="modal-buttons">
                 <button id="confirmAddress">Confirm</button>
-                <button class="secondary" id="cancelAddress">Cancel</button>
+                <button class="secondary" id="cancelAddress">Go back</button>
             </div>
         </div>
     </div>

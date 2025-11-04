@@ -1,7 +1,6 @@
-// Game configuration constants
-const GAME_CONFIG = {
-    SCORE_PER_SCARE: 1, // points earned per ghost scare
-};
+import { APP_CONFIG } from '../config/AppConfig.js';
+
+const GAME_CONFIG = APP_CONFIG.game;
 
 export class GameManager {
     constructor() {

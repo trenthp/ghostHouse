@@ -1,16 +1,7 @@
 import * as THREE from 'three';
+import { APP_CONFIG } from '../config/AppConfig.js';
 
-const GHOST_CONFIG = {
-    HOVER_SPEED_MIN: 0.5,
-    HOVER_SPEED_MAX: 1.0,
-    BOB_AMOUNT: 0.3,
-    BOB_SPEED: 1.5,
-    BODY_RADIUS: 0.35,
-    BODY_HEIGHT: 0.8,
-    EYE_RADIUS: 0.07,
-    MOUTH_RADIUS: 0.06,
-    AURA_RADIUS: 0.45,
-};
+const GHOST_CONFIG = APP_CONFIG.ghost;
 
 export class Ghost {
     constructor(position, id = 0) {
