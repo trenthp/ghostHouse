@@ -254,18 +254,9 @@ class HalloweenGhostHouse {
 
     setCustomLocation(lat, lng, label) {
         this.customLocation = { lat, lng, label };
-        this.ghostManager.setCustomLocation(lat, lng);
-        this.uiManager.updateLocationStatus({
-            distance: 0,
-            address: label || `${lat.toFixed(4)}, ${lng.toFixed(4)}`
-        }, true);
-
-        // Activate ghosts if AR has been started
-        if (this.arStarted && !this.ghostManager.isActive) {
-            this.ghostManager.activate();
-        }
-
         console.log('Custom location set:', label);
+        // Ghost spawning will be handled by the next onLocationUpdate call
+        // which will now respect the custom location
     }
 
     resetExperience() {
@@ -314,21 +305,62 @@ class HalloweenGhostHouse {
     }
 
     onLocationUpdate(data) {
-        // Only update location if not using custom location
-        if (!this.customLocation) {
-            const isAtLocation = data.distance < 50; // 50 meters from target
-            this.uiManager.updateLocationStatus(data, isAtLocation);
+        let targetLat, targetLng, label;
+        let isAtLocation = false;
 
-            // Set target location for GhostManager
-            const targetPosition = this.calculateTargetWorldPosition(data);
-            this.ghostManager.setTargetLocation(targetPosition);
+        // Determine which location to use
+        if (this.customLocation) {
+            // Using custom location
+            targetLat = this.customLocation.lat;
+            targetLng = this.customLocation.lng;
+            label = this.customLocation.label;
 
-            // Only activate if AR has been started and we're at location
-            if (this.arStarted && isAtLocation && !this.ghostManager.isActive) {
-                this.ghostManager.activate();
-            } else if (!isAtLocation && this.ghostManager.isActive) {
-                this.ghostManager.deactivate();
-            }
+            // Calculate distance to custom location
+            const distance = this.locationManager.calculateDistance(
+                data.currentLat,
+                data.currentLng,
+                targetLat,
+                targetLng
+            );
+            isAtLocation = distance < 50;
+        } else {
+            // Using default/GPS tracked location
+            targetLat = data.targetLat;
+            targetLng = data.targetLng;
+            label = data.address;
+            isAtLocation = data.distance < 50;
+        }
+
+        // Update UI with location status
+        const displayData = {
+            currentLat: data.currentLat,
+            currentLng: data.currentLng,
+            targetLat: targetLat,
+            targetLng: targetLng,
+            distance: this.locationManager.calculateDistance(
+                data.currentLat,
+                data.currentLng,
+                targetLat,
+                targetLng
+            ),
+            address: label
+        };
+        this.uiManager.updateLocationStatus(displayData, isAtLocation);
+
+        // Calculate world position for target location
+        const targetPosition = this.calculateTargetWorldPosition({
+            currentLat: data.currentLat,
+            currentLng: data.currentLng,
+            targetLat: targetLat,
+            targetLng: targetLng
+        });
+        this.ghostManager.setTargetLocation(targetPosition);
+
+        // Manage ghost spawning based on distance to target
+        if (this.arStarted && isAtLocation && !this.ghostManager.isActive) {
+            this.ghostManager.activate();
+        } else if (!isAtLocation && this.ghostManager.isActive) {
+            this.ghostManager.deactivate();
         }
     }
 

@@ -9,10 +9,10 @@ const GHOST_MANAGER_CONFIG = {
     SPAWN_HEIGHT_BASE: 0.8, // base height for ghost spawning (eye level - camera is at 1.6m)
     SPAWN_HEIGHT_VARIANCE: 0.6, // small variance around eye level
 
-    // Spawn distance
-    SPAWN_RADIUS: 20, // 20 meters radius
-    MIN_SPAWN_DISTANCE: 8, // Minimum 8 meters from camera (safety distance)
-    MAX_SPAWN_DISTANCE: 20, // Maximum 20 meters from camera
+    // Spawn distance (relative to target location)
+    SPAWN_RADIUS: 10, // 10 meters radius around target
+    MIN_SPAWN_DISTANCE: 3, // Minimum 3 meters from target location
+    MAX_SPAWN_DISTANCE: 10, // Maximum 10 meters from target location
     SPAWN_POSITION_ATTEMPTS: 10, // Max attempts to find valid spawn position
 
     // Visibility
@@ -43,13 +43,6 @@ export class GhostManager {
 
     setTargetLocation(targetPosition) {
         this.targetLocationPosition.copy(targetPosition);
-    }
-
-    setCustomLocation(lat, lng) {
-        // For custom locations, place ghosts at a fixed distance from camera
-        // This allows the experience to work anywhere
-        this.targetLocationPosition.set(0, 0, -15); // 15 meters in front of camera
-        this.activate(); // Automatically activate when custom location is set
     }
 
     activate() {
