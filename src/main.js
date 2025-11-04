@@ -104,25 +104,26 @@ class HalloweenGhostHouse {
 
     setupEventListeners() {
         // AR intro modal handlers
-        const startARBtn = document.getElementById('startARButton');
-        const cancelARBtn = document.getElementById('cancelARButton');
-        if (startARBtn) {
-            startARBtn.addEventListener('click', () => {
+        const startGhostHouseBtn = document.getElementById('startGhostHouseButton');
+        const hauntCustomHouseBtn = document.getElementById('hauntCustomHouseButton');
+        if (startGhostHouseBtn) {
+            startGhostHouseBtn.addEventListener('click', () => {
                 this.closeARIntroModal();
                 this.arManager?.initiateARPermissions();
             });
         }
-        if (cancelARBtn) {
-            cancelARBtn.addEventListener('click', () => {
+        if (hauntCustomHouseBtn) {
+            hauntCustomHouseBtn.addEventListener('click', () => {
                 this.closeARIntroModal();
+                this.openAddressModal();
             });
         }
 
-        // Toggle custom house
-        const toggleButton = document.getElementById('toggleButton');
-        if (toggleButton) {
-            toggleButton.addEventListener('click', () => {
-                this.openAddressModal();
+        // Restart experience button
+        const restartButton = document.getElementById('restartButton');
+        if (restartButton) {
+            restartButton.addEventListener('click', () => {
+                this.resetExperience();
             });
         }
 
@@ -141,6 +142,10 @@ class HalloweenGhostHouse {
         if (cancelBtn) {
             cancelBtn.addEventListener('click', () => {
                 this.closeAddressModal();
+                if (addressInput) {
+                    addressInput.value = '';
+                }
+                this.showARIntroModal();
             });
         }
 
@@ -158,7 +163,7 @@ class HalloweenGhostHouse {
 
         window.addEventListener('click', (event) => {
             // Ignore UI clicks
-            if (event.target.closest('#toggleButton, #ar-button, .modal-overlay, input, .score-display, .location-status')) {
+            if (event.target.closest('#restartButton, #startGhostHouseButton, #hauntCustomHouseButton, #ar-button, .modal-overlay, input, .score-display, .location-status')) {
                 return;
             }
 
@@ -217,26 +222,34 @@ class HalloweenGhostHouse {
     confirmCustomAddress() {
         const input = document.getElementById('addressInput');
         if (!input || !input.value.trim()) {
-            alert('Please enter an address or coordinates');
+            alert('Please enter coordinates in the format: 40.7128,-74.0060');
             return;
         }
 
-        const address = input.value.trim();
+        const coords = input.value.trim();
 
-        // Try to parse as coordinates (lat,lng)
-        const coordMatch = address.match(/^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/);
+        // Parse as coordinates (lat,lng)
+        const coordMatch = coords.match(/^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/);
         if (coordMatch) {
             const lat = parseFloat(coordMatch[1]);
             const lng = parseFloat(coordMatch[2]);
-            this.setCustomLocation(lat, lng, address);
+
+            // Validate coordinates
+            if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+                alert('Invalid coordinates. Latitude must be -90 to 90, Longitude must be -180 to 180');
+                return;
+            }
+
+            this.setCustomLocation(lat, lng, `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
             this.closeAddressModal();
             input.value = '';
+
+            // Initiate AR permissions after setting custom location
+            this.arManager?.initiateARPermissions();
             return;
         }
 
-        // For addresses, we'd need a geocoding API
-        // For now, show a simple alert
-        alert('Direct address lookup not yet implemented. Please use coordinates format: "40.7128,-74.0060"');
+        alert('Invalid format. Please use: 40.7128,-74.0060\n\nTip: Find coordinates on Google Maps by right-clicking a location and selecting "What\'s here?"');
     }
 
     setCustomLocation(lat, lng, label) {
@@ -253,6 +266,42 @@ class HalloweenGhostHouse {
         }
 
         console.log('Custom location set:', label);
+    }
+
+    resetExperience() {
+        // Stop AR session
+        this.arStarted = false;
+        this.arManager?.stopAR();
+
+        // Deactivate ghosts
+        this.ghostManager.deactivate();
+
+        // Clear custom location
+        this.customLocation = null;
+
+        // Reset score
+        this.gameManager.resetGame();
+        this.uiManager.updateScore(0);
+
+        // Clear address input
+        const addressInput = document.getElementById('addressInput');
+        if (addressInput) {
+            addressInput.value = '';
+        }
+
+        // Close any open modals
+        this.closeAddressModal();
+
+        // Reset location status to default
+        this.uiManager.updateLocationStatus({
+            distance: 0,
+            address: 'Calculating...'
+        }, false);
+
+        // Show intro modal
+        this.showARIntroModal();
+
+        console.log('Experience reset - showing intro modal');
     }
 
     onARStarted() {

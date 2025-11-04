@@ -220,9 +220,8 @@
         }
 
         .modal-buttons {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
+            display: grid;
+            gap: 16px;
             margin-top: 20px;
         }
 
@@ -309,7 +308,7 @@
                 </div>
             </div>
             <div class="control-buttons">
-                <button id="toggleButton">⚙️ Custom House</button>
+                <button id="restartButton">🔄 Restart Experience</button>
             </div>
         </div>
     </div>
@@ -317,10 +316,10 @@
     <!-- Address Modal -->
     <div class="modal-overlay" id="addressModal">
         <div class="modal-content">
-            <h2>🏚️ Enter Ghost House Location</h2>
-            <p>Specify the address or coordinates for your haunted house</p>
-            <input type="text" id="addressInput" placeholder="Address or 'lat,lng'" autocomplete="off">
-            <p style="font-size: 12px; color: #888;">Examples: "123 Main St, Springfield" or "40.7128,-74.0060"</p>
+            <h2>🏚️ Enter Haunted House Location</h2>
+            <p>Enter coordinates for your haunted house</p>
+            <input type="text" id="addressInput" placeholder="e.g., 40.7128,-74.0060" autocomplete="off">
+            <p style="font-size: 12px; color: #888;">Find coordinates: right-click a location on Google Maps and select "What's here?"</p>
             <div class="modal-buttons">
                 <button id="confirmAddress">Confirm</button>
                 <button class="secondary" id="cancelAddress">Cancel</button>
@@ -336,8 +335,8 @@
             <p>Step into augmented reality to see ghosts floating around the house location.</p>
             <p>Tap on ghosts to scare them away and earn points!</p>
             <div class="modal-buttons">
-                <button id="startARButton">Start AR Experience</button>
-                <button class="secondary" id="cancelARButton">Cancel</button>
+                <button id="startGhostHouseButton">Start at the Ghost House</button>
+                <button id="hauntCustomHouseButton" class="secondary">Haunt a new House</button>
             </div>
         </div>
     </div>
