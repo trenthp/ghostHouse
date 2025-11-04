@@ -4,11 +4,12 @@ import { APP_CONFIG } from '../config/AppConfig.js';
 const AR_CONFIG = APP_CONFIG.ar;
 
 export class ARManager {
-    constructor(scene, renderer, camera, onARStarted) {
+    constructor(scene, renderer, camera, onARStarted, modalManager) {
         this.scene = scene;
         this.renderer = renderer;
         this.camera = camera;
         this.onARStarted = onARStarted;
+        this.modalManager = modalManager;
         this.xrSession = null;
         this.isARSupported = false;
         this.isARActive = false;
@@ -67,7 +68,8 @@ export class ARManager {
             this.showPermissionModal(
                 cfg.PERMISSION_TITLE_NOT_SUPPORTED,
                 cfg.PERMISSION_MSG_NOT_SUPPORTED,
-                false
+                false,
+                true // returnToIntro = true (blocking error)
             );
             return;
         }
@@ -75,14 +77,19 @@ export class ARManager {
         this.showPermissionModal(
             cfg.PERMISSION_TITLE_CAMERA,
             cfg.PERMISSION_MSG_CAMERA,
-            true
+            true,
+            false // returnToIntro = false (user can try again later)
         );
     }
 
     /**
      * Show a clean permission modal to the user
+     * @param {string} title - Modal title
+     * @param {string} message - Modal message
+     * @param {boolean} showContinue - Show "Continue" button (vs just "Close")
+     * @param {boolean} returnToIntro - On close, return to intro modal instead of just closing
      */
-    showPermissionModal(title, message, showContinue = true) {
+    showPermissionModal(title, message, showContinue = true, returnToIntro = false) {
         const cfg = AR_CONFIG;
 
         // Create modal overlay
@@ -128,6 +135,10 @@ export class ARManager {
             modalOverlay.remove();
             if (!showContinue) {
                 this.hasAttemptedAR = true;
+            }
+            // Return to intro modal if this is a blocking error
+            if (returnToIntro && this.modalManager) {
+                this.modalManager.show('arIntroModal');
             }
         };
         buttonContainer.appendChild(cancelBtn);
@@ -207,11 +218,12 @@ export class ARManager {
             this.permissionState = 'denied';
             this.hasAttemptedAR = false; // Allow retry
 
-            // Show error modal
+            // Show error modal and return to intro
             this.showPermissionModal(
                 cfg.PERMISSION_TITLE_DENIED,
                 `${cfg.PERMISSION_MSG_DENIED}\n\nError: ${err.message}`,
-                false
+                false,
+                true // returnToIntro = true (blocking error)
             );
         }
     }

@@ -34,11 +34,13 @@ class HalloweenGhostHouse {
             this.uiManager = new UIManager();
             this.locationManager = new LocationManager();
             this.ghostManager = new GhostManager(this.scene, this.gameManager);
-            this.arManager = new ARManager(this.scene, this.renderer, this.camera, () => this.onARStarted());
             this.modalManager = new ModalManager();
 
             // Register modals
             this.registerModals();
+
+            // Pass modalManager to ARManager so it can navigate modals on errors
+            this.arManager = new ARManager(this.scene, this.renderer, this.camera, () => this.onARStarted(), this.modalManager);
 
             // Check WebXR support
             const supportsWebXR = navigator.xr !== undefined;

@@ -36,17 +36,39 @@
             z-index: 100;
         }
 
-        /* Top UI Section */
-        .ui-top {
+        /* Top-Left Logo */
+        .logo {
             position: absolute;
             top: 20px;
             left: 20px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            pointer-events: none;
+        }
+
+        /* Top-Right Start Over Button */
+        #restartButton {
+            position: absolute;
+            top: 20px;
             right: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            pointer-events: auto;
-            gap: 10px;
+            padding: 8px 12px;
+            font-size: 12px;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: none;
+            font-weight: normal;
+        }
+
+        #restartButton:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: none;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        #restartButton:active {
+            transform: none;
         }
 
         .location-status {
@@ -105,7 +127,7 @@
         }
 
         .control-buttons {
-            display: flex;
+            display: grid;
             gap: 8px;
         }
 
@@ -137,6 +159,15 @@
             background: #4ade80;
             border-color: #4ade80;
             color: #000;
+        }
+
+        button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        button.secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
         }
 
         /* AR Button */
@@ -262,9 +293,13 @@
         }
 
         @media (max-width: 600px) {
-            .ui-top {
-                flex-direction: column;
-                align-items: flex-start;
+            .logo {
+                font-size: 12px;
+            }
+
+            #restartButton {
+                padding: 6px 10px;
+                font-size: 11px;
             }
 
             .location-status {
@@ -296,24 +331,23 @@
     <canvas id="canvas"></canvas>
 
     <div class="ui-container">
-        <!-- Top: Location Status -->
-        <div class="ui-top">
+        <!-- Logo -->
+        <div class="logo">🎃 Ghost House AR 👻</div>
+
+        <!-- Start Over Button -->
+        <button id="restartButton">🔄 Start Over</button>
+
+        <!-- Bottom-Left: Location Status and Score -->
+        <div class="ui-bottom">
             <div class="location-status" id="locationStatus">
                 <span class="indicator" id="locationIndicator"></span>
                 <span id="locationText">Calculating...</span>
             </div>
-        </div>
-
-        <!-- Bottom: Score and Controls -->
-        <div class="ui-bottom">
             <div class="score-display">
                 <div class="score-row">
                     <span class="score-label">Ghosts Scared:</span>
                     <span class="score-value" id="scaresCount">0</span>
                 </div>
-            </div>
-            <div class="control-buttons">
-                <button id="restartButton">🔄 Restart Experience</button>
             </div>
         </div>
     </div>
