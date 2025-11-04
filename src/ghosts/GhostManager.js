@@ -10,9 +10,9 @@ const GHOST_MANAGER_CONFIG = {
     SPAWN_HEIGHT_VARIANCE: 0.6, // small variance around eye level
 
     // Spawn distance (relative to target location)
-    SPAWN_RADIUS: 10, // 10 meters radius around target
-    MIN_SPAWN_DISTANCE: 3, // Minimum 3 meters from target location
-    MAX_SPAWN_DISTANCE: 10, // Maximum 10 meters from target location
+    SPAWN_RADIUS: 2, // 2 meters radius around target (tight cluster)
+    MIN_SPAWN_DISTANCE: 0.5, // Minimum 0.5 meters from target location
+    MAX_SPAWN_DISTANCE: 2, // Maximum 2 meters from target location
     SPAWN_POSITION_ATTEMPTS: 10, // Max attempts to find valid spawn position
 
     // Visibility
