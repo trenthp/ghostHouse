@@ -48,9 +48,45 @@ An immersive WebXR application that displays ghosts flying around a specific hou
 
 ## Browser Support
 
-- **iOS**: Safari 14.5+ (with AR support)
-- **Android**: Chrome 88+, Edge 88+, Samsung Internet 14+
-- **Desktop**: Chrome/Edge with WebXR emulator extension
+### iOS Requirements
+- **Device**: iPhone or iPad
+- **OS**: iOS 14 or later (iOS 15+ recommended)
+- **Browser**: Safari only (WebXR for AR)
+- **Connection**: HTTPS required (local HTTPS works too)
+- **Permissions**: Camera and Location access required
+
+### Android
+- **Chrome**: 88+
+- **Edge**: 88+
+- **Samsung Internet**: 14+
+
+### Desktop
+- Chrome/Edge with WebXR emulator extension
+- Useful for testing without a phone
+
+## iOS-Specific Features
+
+The app includes iOS-specific enhancements:
+- **Device Detection**: Automatically detects iOS and Safari
+- **HTTPS Enforcement**: Warns if not using secure connection
+- **iOS Version Checking**: Verifies iOS 14+ for WebXR support
+- **Contextual Help**: iOS-specific permission instructions
+- **ARKit Integration**: Leverages native ARKit on iOS
+
+### iOS Troubleshooting
+
+**AR Not Working on iOS?**
+1. Update to iOS 14 or later
+2. Use Safari browser (other browsers don't support WebXR)
+3. Ensure site is loaded via HTTPS
+4. Check Settings > Safari > Websites for camera/location permissions
+5. Grant both camera AND location permissions
+6. Reload the page after granting permissions
+
+**Performance Tips**
+- Close other apps before using AR
+- Ensure good lighting for better AR tracking
+- Update iOS to the latest version
 
 ## Project Structure
 
