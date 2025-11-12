@@ -49,7 +49,7 @@ export const APP_CONFIG = {
     // ==================== GHOST MANAGER ====================
     ghostManager: {
         // Spawning
-        MAX_GHOSTS: 8, // Maximum concurrent ghosts (reduced from 15 for performance)
+        MAX_GHOSTS: 4, // Maximum concurrent ghosts (4 total for the game)
         SPAWN_RATE: 2, // seconds between ghost spawns
         SPAWN_HEIGHT_BASE: 0.8, // base height for ghost spawning (eye level - camera is at 1.6m)
         SPAWN_HEIGHT_VARIANCE: 0.6, // small variance around eye level

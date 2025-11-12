@@ -4,6 +4,8 @@ export class UIManager {
         this.locationText = document.getElementById('locationText');
         this.locationIndicator = document.getElementById('locationIndicator');
         this.scaresCount = document.getElementById('scaresCount');
+        this.gameCompleteModal = document.getElementById('gameCompleteModal');
+        this.finalScoreDisplay = document.getElementById('finalScore');
     }
 
     updateLocationStatus(data, isAtLocation) {
@@ -46,5 +48,20 @@ export class UIManager {
 
     showError(message) {
         console.error(message);
+    }
+
+    showGameComplete(finalScore) {
+        if (this.finalScoreDisplay) {
+            this.finalScoreDisplay.textContent = finalScore;
+        }
+        if (this.gameCompleteModal) {
+            this.gameCompleteModal.classList.add('active');
+        }
+    }
+
+    hideGameComplete() {
+        if (this.gameCompleteModal) {
+            this.gameCompleteModal.classList.remove('active');
+        }
     }
 }

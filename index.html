@@ -393,6 +393,25 @@
         </div>
     </div>
 
+    <!-- Game Complete Modal -->
+    <div class="modal-overlay" id="gameCompleteModal">
+        <div class="modal-content">
+            <h2>🎉 Victory! 🎉</h2>
+            <p>Congratulations, Ghost Hunter!</p>
+            <p>You've successfully protected the Ghost House!</p>
+            <div class="score-display" style="margin: 20px auto; text-align: center;">
+                <div class="score-row" style="flex-direction: column;">
+                    <span class="score-label">Ghosts Scared:</span>
+                    <span class="score-value" id="finalScore" style="font-size: 28px; margin-top: 8px;">0</span>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button id="restartGameButton">🔄 Start Over</button>
+                <button id="hauntAnotherHouseButton" class="secondary">👻 Haunt Another House</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="./src/main.js"></script>
 </body>
 </html>

@@ -25,6 +25,11 @@ export class GhostManager {
         // Target location for spawning
         this.targetLocationPosition = new THREE.Vector3(0, 0, 0); // Will be set dynamically
         this.cameraPosition = new THREE.Vector3(0, 0, 0); // Updated each frame
+
+        // Game completion tracking
+        this.ghostsSpawned = 0;
+        this.gameComplete = false;
+        this.onGameCompleteCallback = null;
     }
 
     setTargetLocation(targetPosition) {
@@ -36,6 +41,8 @@ export class GhostManager {
         this.isActive = true;
         this.spawnTimer = 0;
         this.ghosts = [];
+        this.ghostsSpawned = 0;
+        this.gameComplete = false;
     }
 
     deactivate() {
@@ -52,7 +59,7 @@ export class GhostManager {
 
         // Spawn new ghosts
         this.spawnTimer -= deltaTime;
-        if (this.spawnTimer <= 0 && this.ghosts.length < this.maxGhosts) {
+        if (this.spawnTimer <= 0 && this.ghostsSpawned < this.maxGhosts && this.ghosts.length < this.maxGhosts) {
             this.spawnGhost(camera);
             this.spawnTimer = this.spawnRate;
         }
@@ -67,6 +74,14 @@ export class GhostManager {
             if (distToTargetLocation > GHOST_MANAGER_CONFIG.VISIBILITY_RADIUS) {
                 ghost.remove();
                 this.ghosts.splice(i, 1);
+            }
+        }
+
+        // Check if game is complete (all ghosts spawned and all removed)
+        if (!this.gameComplete && this.ghostsSpawned >= this.maxGhosts && this.ghosts.length === 0) {
+            this.gameComplete = true;
+            if (this.onGameCompleteCallback) {
+                this.onGameCompleteCallback();
             }
         }
     }
@@ -120,6 +135,7 @@ export class GhostManager {
         const ghost = new Ghost(position, this.ghosts.length);
         this.scene.add(ghost.getMesh());
         this.ghosts.push(ghost);
+        this.ghostsSpawned++;
     }
 
     getGhostByMesh(mesh) {
@@ -141,5 +157,9 @@ export class GhostManager {
 
     getScaredGhosts() {
         return this.ghosts.filter(g => g.isScared()).length;
+    }
+
+    setOnGameCompleteCallback(callback) {
+        this.onGameCompleteCallback = callback;
     }
 }

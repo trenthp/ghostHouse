@@ -19,11 +19,20 @@ export class Ghost {
 
         // Behavior
         this.scared = false;
-        this.scareTTL = 0;
+        this.scareCount = 0; // 0 = not scared yet, 1 = scared once, 2 = scared twice (should fade)
+        this.scareTTL = 0; // Time left in scared state
+        this.scaredDuration = 4; // How long ghost stays scared (4 seconds)
         this.hoverRadius = 1 + Math.random() * 2;
+
+        // Shake animation (when scared)
+        this.shakeIntensity = 0.15; // How much to shake when scared
+        this.shakeBasePosition = position.clone();
 
         // Animation
         this.scale = 1;
+        this.baseOpacity = 1;
+        this.isFading = false;
+        this.fadeDuration = 0.5; // How long fade-out takes
     }
 
     createMesh() {
@@ -37,7 +46,9 @@ export class Ghost {
             emissiveIntensity: 0.3,
             metalness: 0.2,
             roughness: 0.8,
-            fog: true
+            fog: true,
+            transparent: true,
+            opacity: 1
         });
         const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
         body.position.y = 0;
@@ -45,7 +56,11 @@ export class Ghost {
 
         // Left eye
         const eyeGeometry = new THREE.SphereGeometry(GHOST_CONFIG.EYE_RADIUS, 8, 8);
-        const eyeMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
+        const eyeMaterial = new THREE.MeshStandardMaterial({
+            color: 0x000000,
+            transparent: true,
+            opacity: 1
+        });
         const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
         leftEye.position.set(-0.1, 0.15, GHOST_CONFIG.BODY_RADIUS + 0.05);
         group.add(leftEye);
@@ -77,18 +92,33 @@ export class Ghost {
     }
 
     update(deltaTime, camera) {
-        // Bobbing motion
-        this.bobTime += this.bobSpeed * deltaTime;
-        const bobOffset = Math.sin(this.bobTime) * this.bobAmount;
+        // Bobbing motion (only when not scared)
+        if (!this.scared && !this.isFading) {
+            this.bobTime += this.bobSpeed * deltaTime;
+        }
+        const bobOffset = !this.scared && !this.isFading ? Math.sin(this.bobTime) * this.bobAmount : 0;
 
-        // Hover around center point
-        const hoverX = Math.cos(this.bobTime * 0.5) * this.hoverRadius;
-        const hoverZ = Math.sin(this.bobTime * 0.3) * this.hoverRadius;
+        // Hover around center point (only when not scared)
+        let hoverX = 0;
+        let hoverZ = 0;
+        if (!this.scared && !this.isFading) {
+            // Apply speed multiplier if previously scared (slightly faster)
+            const speedMultiplier = this.scareCount > 0 ? 1.15 : 1.0;
+            hoverX = Math.cos(this.bobTime * 0.5 * speedMultiplier) * this.hoverRadius;
+            hoverZ = Math.sin(this.bobTime * 0.3 * speedMultiplier) * this.hoverRadius;
+        }
 
         this.position.copy(this.hoverCenter);
         this.position.x += hoverX;
         this.position.y += bobOffset;
         this.position.z += hoverZ;
+
+        // Add shake when scared
+        if (this.scared) {
+            this.position.x += (Math.random() - 0.5) * this.shakeIntensity;
+            this.position.y += (Math.random() - 0.5) * this.shakeIntensity;
+            this.position.z += (Math.random() - 0.5) * this.shakeIntensity;
+        }
 
         this.mesh.position.copy(this.position);
 
@@ -98,6 +128,34 @@ export class Ghost {
         // Scare behavior
         if (this.scared) {
             this.scareTTL -= deltaTime;
+
+            // Flash opacity while scared (flashing effect)
+            const flashSpeed = 4; // Flash frequency
+            const flashAmount = Math.sin(this.scareTTL * flashSpeed * Math.PI) * 0.3;
+            const opacity = Math.max(0.2, 1 - Math.abs(flashAmount));
+            this.setOpacity(opacity);
+
+            if (this.scareTTL <= 0) {
+                this.scared = false;
+
+                if (this.scareCount >= 2) {
+                    // On second scare, fade out completely
+                    this.isFading = true;
+                    this.scareTTL = this.fadeDuration;
+                } else {
+                    // Reset opacity after first scare
+                    this.setOpacity(1);
+                }
+            }
+        }
+
+        // Handle fade-out
+        if (this.isFading) {
+            this.scareTTL -= deltaTime;
+            const fadeProgress = 1 - (this.scareTTL / this.fadeDuration);
+            const fadeOpacity = Math.max(0, 1 - fadeProgress);
+            this.setOpacity(fadeOpacity);
+
             if (this.scareTTL <= 0) {
                 this.remove();
             }
@@ -111,9 +169,27 @@ export class Ghost {
     }
 
     scare() {
-        if (!this.scared) {
+        if (!this.scared && !this.isFading && this.scareCount < 2) {
             this.scared = true;
-            this.scareTTL = 0.5; // Remove after 0.5 seconds
+            this.scareCount++;
+            this.scareTTL = this.scaredDuration; // Scared for 4 seconds
+        }
+    }
+
+    setOpacity(opacity) {
+        // Set opacity for all materials in the mesh
+        if (this.mesh) {
+            this.mesh.traverse((child) => {
+                if (child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(mat => {
+                            mat.opacity = opacity;
+                        });
+                    } else {
+                        child.material.opacity = opacity;
+                    }
+                }
+            });
         }
     }
 

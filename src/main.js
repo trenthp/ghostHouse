@@ -36,6 +36,9 @@ class HalloweenGhostHouse {
             this.ghostManager = new GhostManager(this.scene, this.gameManager);
             this.modalManager = new ModalManager();
 
+            // Set game complete callback
+            this.ghostManager.setOnGameCompleteCallback(() => this.onGameComplete());
+
             // Register modals
             this.registerModals();
 
@@ -115,10 +118,12 @@ class HalloweenGhostHouse {
         const arIntroModal = document.getElementById('arIntroModal');
         const locationSelectionModal = document.getElementById('locationSelectionModal');
         const addressModal = document.getElementById('addressModal');
+        const gameCompleteModal = document.getElementById('gameCompleteModal');
 
         if (arIntroModal) this.modalManager.registerModal('arIntroModal', arIntroModal);
         if (locationSelectionModal) this.modalManager.registerModal('locationSelectionModal', locationSelectionModal);
         if (addressModal) this.modalManager.registerModal('addressModal', addressModal);
+        if (gameCompleteModal) this.modalManager.registerModal('gameCompleteModal', gameCompleteModal);
     }
 
     setupEventListeners() {
@@ -208,13 +213,31 @@ class HalloweenGhostHouse {
             });
         }
 
+        // Game complete modal handlers
+        const restartGameBtn = document.getElementById('restartGameButton');
+        const hauntAnotherHouseBtn = document.getElementById('hauntAnotherHouseButton');
+
+        if (restartGameBtn) {
+            restartGameBtn.addEventListener('click', () => {
+                this.resetExperience();
+            });
+        }
+
+        if (hauntAnotherHouseBtn) {
+            hauntAnotherHouseBtn.addEventListener('click', () => {
+                this.uiManager.hideGameComplete();
+                this.modalManager.hide('gameCompleteModal');
+                this.modalManager.show('locationSelectionModal');
+            });
+        }
+
         // Ghost interaction - raycaster for clicking ghosts
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
         window.addEventListener('click', (event) => {
             // Ignore UI clicks
-            if (event.target.closest('#restartButton, #startGhostHouseButton, #hauntCustomHouseButton, #enterLocationButton, #hauntCurrentLocationButton, #cancelLocationSelection, #ar-button, .modal-overlay, input, .score-display, .location-status')) {
+            if (event.target.closest('#restartButton, #startGhostHouseButton, #hauntCustomHouseButton, #enterLocationButton, #hauntCurrentLocationButton, #cancelLocationSelection, #restartGameButton, #hauntAnotherHouseButton, #ar-button, .modal-overlay, input, .score-display, .location-status')) {
                 return;
             }
 
@@ -295,6 +318,9 @@ class HalloweenGhostHouse {
         this.gameManager.resetGame();
         this.uiManager.updateScore(0);
 
+        // Hide game complete modal
+        this.uiManager.hideGameComplete();
+
         // Clear address input
         const addressInput = document.getElementById('addressInput');
         if (addressInput) {
@@ -321,6 +347,13 @@ class HalloweenGhostHouse {
         if (this.customLocation && !this.ghostManager.isActive) {
             this.ghostManager.activate();
         }
+    }
+
+    onGameComplete() {
+        // Game is complete - show victory modal with final score
+        const finalScore = this.gameManager.getStats().scaresCount;
+        this.uiManager.showGameComplete(finalScore);
+        console.log('Game complete! Final score:', finalScore);
     }
 
     onLocationUpdate(data) {
