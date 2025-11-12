@@ -92,6 +92,9 @@ export class Ghost {
 
         this.mesh.position.copy(this.position);
 
+        // Face the camera - rotate the ghost to look at the camera
+        this.mesh.lookAt(camera.position);
+
         // Scare behavior
         if (this.scared) {
             this.scareTTL -= deltaTime;

@@ -19,6 +19,7 @@ export class GhostManager {
         this.spawnRadius = GHOST_MANAGER_CONFIG.SPAWN_RADIUS;
         this.minSpawnDistance = GHOST_MANAGER_CONFIG.MIN_SPAWN_DISTANCE;
         this.maxSpawnDistance = GHOST_MANAGER_CONFIG.MAX_SPAWN_DISTANCE;
+        this.minSpawnDistanceFromCamera = GHOST_MANAGER_CONFIG.MIN_SPAWN_DISTANCE_FROM_CAMERA;
         this.spawnHeight = GHOST_MANAGER_CONFIG.SPAWN_HEIGHT_BASE;
 
         // Target location for spawning
@@ -89,7 +90,8 @@ export class GhostManager {
 
     /**
      * Spawn a ghost at a safe distance from the camera
-     * Ghosts spawn between minSpawnDistance and maxSpawnDistance from the user
+     * Ghosts spawn between minSpawnDistance and maxSpawnDistance from the target location
+     * and at least minSpawnDistanceFromCamera away from the user
      */
     spawnGhost(camera) {
         const cfg = GHOST_MANAGER_CONFIG;
@@ -100,9 +102,9 @@ export class GhostManager {
         while (attempts < cfg.SPAWN_POSITION_ATTEMPTS) {
             position = this.generateSpawnPosition();
 
-            // Check distance from camera - ensure safe minimum distance
+            // Check distance from camera - ensure safe minimum distance from user
             const distFromCamera = position.distanceTo(camera.position);
-            if (distFromCamera >= this.minSpawnDistance) {
+            if (distFromCamera >= this.minSpawnDistanceFromCamera) {
                 // Valid spawn position found
                 break;
             }

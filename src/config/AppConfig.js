@@ -58,6 +58,7 @@ export const APP_CONFIG = {
         SPAWN_RADIUS: 2, // 2 meters radius around target (tight cluster)
         MIN_SPAWN_DISTANCE: 0.5, // Minimum 0.5 meters from target location
         MAX_SPAWN_DISTANCE: 2, // Maximum 2 meters from target location
+        MIN_SPAWN_DISTANCE_FROM_CAMERA: 1.5, // Minimum safe distance from user (prevents spawning at user)
         SPAWN_POSITION_ATTEMPTS: 10, // Max attempts to find valid spawn position
 
         // Visibility
