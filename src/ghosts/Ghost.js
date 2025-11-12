@@ -21,7 +21,7 @@ export class Ghost {
         this.scared = false;
         this.scareCount = 0; // 0 = not scared yet, 1 = scared once, 2 = scared twice (should fade)
         this.scareTTL = 0; // Time left in scared state
-        this.scaredDuration = 4; // How long ghost stays scared (4 seconds)
+        this.scaredDuration = 2; // How long ghost stays scared (2 seconds)
         this.hoverRadius = 1 + Math.random() * 2;
 
         // Shake animation (when scared)
@@ -129,11 +129,8 @@ export class Ghost {
         if (this.scared) {
             this.scareTTL -= deltaTime;
 
-            // Flash opacity while scared (flashing effect)
-            const flashSpeed = 4; // Flash frequency
-            const flashAmount = Math.sin(this.scareTTL * flashSpeed * Math.PI) * 0.3;
-            const opacity = Math.max(0.2, 1 - Math.abs(flashAmount));
-            this.setOpacity(opacity);
+            // Reduce opacity while scared
+            this.setOpacity(0.35);
 
             if (this.scareTTL <= 0) {
                 this.scared = false;
