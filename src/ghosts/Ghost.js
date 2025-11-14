@@ -168,11 +168,11 @@ export class Ghost {
         if (this.isInvisible) {
             // Fade out when transitioning to invisible
             const fadeProgress = this.visibilityTimer / 0.5; // 0.5 second fade
-            this.visibilityOpacity = Math.max(0, 1 - fadeProgress);
+            this.visibilityOpacity = Math.max(0, 1 - fadeProgress) * GHOST_CONFIG.MAX_OPACITY;
         } else {
             // Fade in when transitioning to visible
             const fadeProgress = this.visibilityTimer / 0.5; // 0.5 second fade
-            this.visibilityOpacity = Math.min(1, fadeProgress);
+            this.visibilityOpacity = Math.min(1, fadeProgress) * GHOST_CONFIG.MAX_OPACITY;
         }
 
         // Scare behavior

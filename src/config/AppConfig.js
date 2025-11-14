@@ -78,15 +78,16 @@ export const APP_CONFIG = {
         EYE_RADIUS: 0.07,
         MOUTH_RADIUS: 0.06,
         AURA_RADIUS: 0.45,
+        MAX_OPACITY: 0.6, // Maximum opacity for ghostly see-through effect
 
         // Distance maintenance from user
         MIN_DISTANCE_FROM_CAMERA: 1.0, // meters - keep at least 1m from user
 
         // Fade in/out behavior
-        VISIBLE_DURATION_MIN: 2.0, // seconds - minimum time ghost stays visible
-        VISIBLE_DURATION_MAX: 4.0, // seconds - maximum time ghost stays visible
-        INVISIBLE_DURATION_MIN: 2.0, // seconds - minimum time ghost stays invisible
-        INVISIBLE_DURATION_MAX: 4.0, // seconds - maximum time ghost stays invisible
+        VISIBLE_DURATION_MIN: 1.0, // seconds - minimum time ghost stays visible
+        VISIBLE_DURATION_MAX: 3.0, // seconds - maximum time ghost stays visible
+        INVISIBLE_DURATION_MIN: 1.0, // seconds - minimum time ghost stays invisible
+        INVISIBLE_DURATION_MAX: 3.0, // seconds - maximum time ghost stays invisible
         SPAWN_RADIUS: 2.0, // meters - radius around spawn point where ghost can reappear
     },
 
