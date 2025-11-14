@@ -67,10 +67,12 @@ export const APP_CONFIG = {
 
     // ==================== GHOST INDIVIDUAL ====================
     ghost: {
-        HOVER_SPEED_MIN: 0.5,
-        HOVER_SPEED_MAX: 1.0,
-        BOB_AMOUNT: 0.3,
-        BOB_SPEED: 1.5,
+        HOVER_SPEED_MIN: 0.2,
+        HOVER_SPEED_MAX: 0.4,
+        BOB_AMOUNT: 0.1,
+        BOB_SPEED: 0.8,
+        HOVER_RADIUS_MIN: 0.15,
+        HOVER_RADIUS_MAX: 0.35,
         BODY_RADIUS: 0.35,
         BODY_HEIGHT: 0.8,
         EYE_RADIUS: 0.07,

@@ -22,7 +22,7 @@ export class Ghost {
         this.scareCount = 0; // 0 = not scared yet, 1 = scared once, 2 = scared twice (should fade)
         this.scareTTL = 0; // Time left in scared state
         this.scaredDuration = 2; // How long ghost stays scared (2 seconds)
-        this.hoverRadius = 1 + Math.random() * 2;
+        this.hoverRadius = GHOST_CONFIG.HOVER_RADIUS_MIN + Math.random() * (GHOST_CONFIG.HOVER_RADIUS_MAX - GHOST_CONFIG.HOVER_RADIUS_MIN);
 
         // Shake animation (when scared)
         this.shakeIntensity = 0.15; // How much to shake when scared
