@@ -33,6 +33,16 @@ export class Ghost {
         this.baseOpacity = 1;
         this.isFading = false;
         this.fadeDuration = 0.5; // How long fade-out takes
+        this.proximityOpacity = 1.0; // Opacity based on distance to camera
+
+        // Facing behavior
+        this.facingTimer = 0;
+        this.shouldFaceUser = Math.random() < GHOST_CONFIG.FACE_USER_PROBABILITY;
+        this.randomLookTarget = new THREE.Vector3(
+            (Math.random() - 0.5) * 10,
+            (Math.random() - 0.5) * 5,
+            (Math.random() - 0.5) * 10
+        );
     }
 
     createMesh() {
@@ -120,17 +130,44 @@ export class Ghost {
             this.position.z += (Math.random() - 0.5) * this.shakeIntensity;
         }
 
+        // Calculate opacity based on proximity to camera (fade when user gets too close)
+        const distToCamera = this.position.distanceTo(camera.position);
+        const fadeStartDistance = 1.0; // Full opacity at 1m
+        const fadeEndDistance = 0.5; // Invisible at 0.5m
+        const fadeRange = fadeStartDistance - fadeEndDistance;
+        this.proximityOpacity = Math.max(0, Math.min(1, (distToCamera - fadeEndDistance) / fadeRange));
+
         this.mesh.position.copy(this.position);
 
-        // Face the camera - rotate the ghost to look at the camera
-        this.mesh.lookAt(camera.position);
+        // Update facing direction behavior
+        this.facingTimer += deltaTime;
+        if (this.facingTimer >= GHOST_CONFIG.FACE_CHANGE_INTERVAL) {
+            this.facingTimer = 0;
+            // Randomly decide whether to face user or look elsewhere
+            this.shouldFaceUser = Math.random() < GHOST_CONFIG.FACE_USER_PROBABILITY;
+            // If looking elsewhere, pick a new random target
+            if (!this.shouldFaceUser) {
+                this.randomLookTarget.set(
+                    this.position.x + (Math.random() - 0.5) * 8,
+                    this.position.y + (Math.random() - 0.5) * 4,
+                    this.position.z + (Math.random() - 0.5) * 8
+                );
+            }
+        }
+
+        // Face the camera or a random direction based on behavior
+        if (this.shouldFaceUser) {
+            this.mesh.lookAt(camera.position);
+        } else {
+            this.mesh.lookAt(this.randomLookTarget);
+        }
 
         // Scare behavior
         if (this.scared) {
             this.scareTTL -= deltaTime;
 
-            // Reduce opacity while scared
-            this.setOpacity(0.35);
+            // Reduce opacity while scared, but apply proximity opacity as multiplier
+            this.setOpacity(0.35 * this.proximityOpacity);
 
             if (this.scareTTL <= 0) {
                 this.scared = false;
@@ -140,8 +177,8 @@ export class Ghost {
                     this.isFading = true;
                     this.scareTTL = this.fadeDuration;
                 } else {
-                    // Reset opacity after first scare
-                    this.setOpacity(1);
+                    // Reset opacity after first scare (apply proximity opacity)
+                    this.setOpacity(this.proximityOpacity);
                 }
             }
         }
@@ -151,15 +188,19 @@ export class Ghost {
             this.scareTTL -= deltaTime;
             const fadeProgress = 1 - (this.scareTTL / this.fadeDuration);
             const fadeOpacity = Math.max(0, 1 - fadeProgress);
-            this.setOpacity(fadeOpacity);
+            this.setOpacity(fadeOpacity * this.proximityOpacity);
 
             if (this.scareTTL <= 0) {
                 this.remove();
             }
         }
 
-        // Distance-based scaling
-        const distToCamera = this.position.distanceTo(camera.position);
+        // Apply proximity opacity during normal state
+        if (!this.scared && !this.isFading) {
+            this.setOpacity(this.proximityOpacity);
+        }
+
+        // Distance-based scaling (reuse distToCamera calculated above)
         const maxDist = 50;
         this.scale = Math.max(0.3, 1 - (distToCamera / maxDist) * 0.7);
         this.mesh.scale.setScalar(this.scale);

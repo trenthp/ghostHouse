@@ -76,6 +76,13 @@ export const APP_CONFIG = {
         EYE_RADIUS: 0.07,
         MOUTH_RADIUS: 0.06,
         AURA_RADIUS: 0.45,
+
+        // Distance maintenance from user
+        MIN_DISTANCE_FROM_CAMERA: 1.0, // meters - keep at least 1m from user
+
+        // Facing behavior
+        FACE_USER_PROBABILITY: 0.75, // 75% of the time face the user
+        FACE_CHANGE_INTERVAL: 2.0, // seconds between facing direction changes
     },
 
     // ==================== GAME ====================
