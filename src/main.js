@@ -253,8 +253,17 @@ class HalloweenGhostHouse {
                 const ghost = this.ghostManager.getGhostByMesh(ghostMesh);
                 if (ghost) {
                     ghost.scare();
-                    this.gameManager.onGhostScared();
-                    this.uiManager.updateScore(this.gameManager.getStats().scaresCount);
+                    // Only award points if ghost is at max opacity
+                    if (ghost.canBeScored()) {
+                        ghost.markScored();
+                        this.gameManager.onGhostScared();
+                        const currentScore = this.gameManager.getStats().scaresCount;
+                        this.uiManager.updateScore(currentScore);
+                        // Check if game is won (8 points = 4 ghosts × 2 scares each)
+                        if (currentScore >= 8) {
+                            this.onGameComplete();
+                        }
+                    }
                 }
             }
         });

@@ -78,7 +78,7 @@ export const APP_CONFIG = {
         EYE_RADIUS: 0.07,
         MOUTH_RADIUS: 0.06,
         AURA_RADIUS: 0.45,
-        MAX_OPACITY: 0.6, // Maximum opacity for ghostly see-through effect
+        MAX_OPACITY: 0.8, // Maximum opacity for ghostly see-through effect
 
         // Distance maintenance from user
         MIN_DISTANCE_FROM_CAMERA: 1.0, // meters - keep at least 1m from user
