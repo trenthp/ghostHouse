@@ -252,10 +252,8 @@ class HalloweenGhostHouse {
                 const ghostMesh = intersects[0].object;
                 const ghost = this.ghostManager.getGhostByMesh(ghostMesh);
                 if (ghost) {
-                    ghost.scare();
-                    // Only award points if ghost is at max opacity
-                    if (ghost.canBeScored()) {
-                        ghost.markScored();
+                    // Award point only if scare is successful (ghost can be scared max 2 times)
+                    if (ghost.scare()) {
                         this.gameManager.onGhostScared();
                         const currentScore = this.gameManager.getStats().scaresCount;
                         this.uiManager.updateScore(currentScore);

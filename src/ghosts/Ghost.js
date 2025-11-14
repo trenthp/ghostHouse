@@ -45,8 +45,6 @@ export class Ghost {
         this.invisibleDuration = GHOST_CONFIG.INVISIBLE_DURATION_MIN + Math.random() * (GHOST_CONFIG.INVISIBLE_DURATION_MAX - GHOST_CONFIG.INVISIBLE_DURATION_MIN);
         this.visibilityTimer = 0;
         this.visibilityOpacity = 1.0; // Opacity for fade in/out effect
-        this.isAtMaxOpacity = false; // Track if ghost is at max opacity for scoring
-        this.hasBeenScoredThisScare = false; // Prevent multiple scores for one scare
     }
 
     createMesh() {
@@ -171,13 +169,10 @@ export class Ghost {
             // Fade out when transitioning to invisible
             const fadeProgress = this.visibilityTimer / 0.5; // 0.5 second fade
             this.visibilityOpacity = Math.max(0, 1 - fadeProgress) * GHOST_CONFIG.MAX_OPACITY;
-            this.isAtMaxOpacity = false;
         } else {
             // Fade in when transitioning to visible
             const fadeProgress = this.visibilityTimer / 0.5; // 0.5 second fade
             this.visibilityOpacity = Math.min(1, fadeProgress) * GHOST_CONFIG.MAX_OPACITY;
-            // Only at max opacity after fade-in is complete (fadeProgress >= 1)
-            this.isAtMaxOpacity = fadeProgress >= 1.0;
         }
 
         // Scare behavior
@@ -242,21 +237,14 @@ export class Ghost {
     }
 
     scare() {
+        // Return true if scare was successful
         if (!this.scared && !this.isFading && this.scareCount < 2) {
             this.scared = true;
             this.scareCount++;
-            this.scareTTL = this.scaredDuration; // Scared for 4 seconds
-            this.hasBeenScoredThisScare = false; // Reset scoring flag for this scare
+            this.scareTTL = this.scaredDuration; // Scared for 2 seconds
+            return true;
         }
-    }
-
-    canBeScored() {
-        // Can only score if ghost is at max opacity and hasn't been scored yet for this scare
-        return this.isAtMaxOpacity && this.scareCount > 0 && !this.hasBeenScoredThisScare;
-    }
-
-    markScored() {
-        this.hasBeenScoredThisScare = true;
+        return false;
     }
 
     setOpacity(opacity) {
