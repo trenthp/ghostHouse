@@ -35,14 +35,16 @@ export class Ghost {
         this.fadeDuration = 0.5; // How long fade-out takes
         this.proximityOpacity = 1.0; // Opacity based on distance to camera
 
-        // Facing behavior
-        this.facingTimer = 0;
-        this.shouldFaceUser = Math.random() < GHOST_CONFIG.FACE_USER_PROBABILITY;
-        this.randomLookTarget = new THREE.Vector3(
-            (Math.random() - 0.5) * 10,
-            (Math.random() - 0.5) * 5,
-            (Math.random() - 0.5) * 10
-        );
+        // Spawn area for repositioning
+        this.spawnAreaCenter = position.clone();
+        this.spawnRadius = GHOST_CONFIG.SPAWN_RADIUS;
+
+        // Fade in/out visibility behavior
+        this.isInvisible = false;
+        this.visibleDuration = GHOST_CONFIG.VISIBLE_DURATION_MIN + Math.random() * (GHOST_CONFIG.VISIBLE_DURATION_MAX - GHOST_CONFIG.VISIBLE_DURATION_MIN);
+        this.invisibleDuration = GHOST_CONFIG.INVISIBLE_DURATION_MIN + Math.random() * (GHOST_CONFIG.INVISIBLE_DURATION_MAX - GHOST_CONFIG.INVISIBLE_DURATION_MIN);
+        this.visibilityTimer = 0;
+        this.visibilityOpacity = 1.0; // Opacity for fade in/out effect
     }
 
     createMesh() {
@@ -139,35 +141,46 @@ export class Ghost {
 
         this.mesh.position.copy(this.position);
 
-        // Update facing direction behavior
-        this.facingTimer += deltaTime;
-        if (this.facingTimer >= GHOST_CONFIG.FACE_CHANGE_INTERVAL) {
-            this.facingTimer = 0;
-            // Randomly decide whether to face user or look elsewhere
-            this.shouldFaceUser = Math.random() < GHOST_CONFIG.FACE_USER_PROBABILITY;
-            // If looking elsewhere, pick a new random target
-            if (!this.shouldFaceUser) {
-                this.randomLookTarget.set(
-                    this.position.x + (Math.random() - 0.5) * 8,
-                    this.position.y + (Math.random() - 0.5) * 4,
-                    this.position.z + (Math.random() - 0.5) * 8
-                );
+        // Always face the camera
+        this.mesh.lookAt(camera.position);
+
+        // Handle visibility fade in/out behavior
+        this.visibilityTimer += deltaTime;
+        const targetDuration = this.isInvisible ? this.invisibleDuration : this.visibleDuration;
+
+        if (this.visibilityTimer >= targetDuration) {
+            this.visibilityTimer = 0;
+
+            if (this.isInvisible) {
+                // Transitioning from invisible to visible
+                this.isInvisible = false;
+                this.visibleDuration = GHOST_CONFIG.VISIBLE_DURATION_MIN + Math.random() * (GHOST_CONFIG.VISIBLE_DURATION_MAX - GHOST_CONFIG.VISIBLE_DURATION_MIN);
+                // Reposition to a new location in the spawn area
+                this.repositionInSpawnArea();
+            } else {
+                // Transitioning from visible to invisible
+                this.isInvisible = true;
+                this.invisibleDuration = GHOST_CONFIG.INVISIBLE_DURATION_MIN + Math.random() * (GHOST_CONFIG.INVISIBLE_DURATION_MAX - GHOST_CONFIG.INVISIBLE_DURATION_MIN);
             }
         }
 
-        // Face the camera or a random direction based on behavior
-        if (this.shouldFaceUser) {
-            this.mesh.lookAt(camera.position);
+        // Update visibility opacity based on fade state
+        if (this.isInvisible) {
+            // Fade out when transitioning to invisible
+            const fadeProgress = this.visibilityTimer / 0.5; // 0.5 second fade
+            this.visibilityOpacity = Math.max(0, 1 - fadeProgress);
         } else {
-            this.mesh.lookAt(this.randomLookTarget);
+            // Fade in when transitioning to visible
+            const fadeProgress = this.visibilityTimer / 0.5; // 0.5 second fade
+            this.visibilityOpacity = Math.min(1, fadeProgress);
         }
 
         // Scare behavior
         if (this.scared) {
             this.scareTTL -= deltaTime;
 
-            // Reduce opacity while scared, but apply proximity opacity as multiplier
-            this.setOpacity(0.35 * this.proximityOpacity);
+            // Reduce opacity while scared, apply both proximity and visibility opacity
+            this.setOpacity(0.35 * this.proximityOpacity * this.visibilityOpacity);
 
             if (this.scareTTL <= 0) {
                 this.scared = false;
@@ -177,8 +190,8 @@ export class Ghost {
                     this.isFading = true;
                     this.scareTTL = this.fadeDuration;
                 } else {
-                    // Reset opacity after first scare (apply proximity opacity)
-                    this.setOpacity(this.proximityOpacity);
+                    // Reset opacity after first scare (apply proximity and visibility opacity)
+                    this.setOpacity(this.proximityOpacity * this.visibilityOpacity);
                 }
             }
         }
@@ -188,22 +201,39 @@ export class Ghost {
             this.scareTTL -= deltaTime;
             const fadeProgress = 1 - (this.scareTTL / this.fadeDuration);
             const fadeOpacity = Math.max(0, 1 - fadeProgress);
-            this.setOpacity(fadeOpacity * this.proximityOpacity);
+            this.setOpacity(fadeOpacity * this.proximityOpacity * this.visibilityOpacity);
 
             if (this.scareTTL <= 0) {
                 this.remove();
             }
         }
 
-        // Apply proximity opacity during normal state
+        // Apply proximity and visibility opacity during normal state
         if (!this.scared && !this.isFading) {
-            this.setOpacity(this.proximityOpacity);
+            this.setOpacity(this.proximityOpacity * this.visibilityOpacity);
         }
 
         // Distance-based scaling (reuse distToCamera calculated above)
         const maxDist = 50;
         this.scale = Math.max(0.3, 1 - (distToCamera / maxDist) * 0.7);
         this.mesh.scale.setScalar(this.scale);
+    }
+
+    repositionInSpawnArea() {
+        // Pick a random location within the spawn radius
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * this.spawnRadius;
+        const height = this.spawnAreaCenter.y + (Math.random() - 0.5) * 0.3; // Small vertical variance
+
+        const newPosition = new THREE.Vector3(
+            this.spawnAreaCenter.x + Math.cos(angle) * distance,
+            height,
+            this.spawnAreaCenter.z + Math.sin(angle) * distance
+        );
+
+        // Update hover center to the new position
+        this.hoverCenter.copy(newPosition);
+        this.position.copy(newPosition);
     }
 
     scare() {

@@ -82,9 +82,12 @@ export const APP_CONFIG = {
         // Distance maintenance from user
         MIN_DISTANCE_FROM_CAMERA: 1.0, // meters - keep at least 1m from user
 
-        // Facing behavior
-        FACE_USER_PROBABILITY: 0.75, // 75% of the time face the user
-        FACE_CHANGE_INTERVAL: 2.0, // seconds between facing direction changes
+        // Fade in/out behavior
+        VISIBLE_DURATION_MIN: 2.0, // seconds - minimum time ghost stays visible
+        VISIBLE_DURATION_MAX: 4.0, // seconds - maximum time ghost stays visible
+        INVISIBLE_DURATION_MIN: 2.0, // seconds - minimum time ghost stays invisible
+        INVISIBLE_DURATION_MAX: 4.0, // seconds - maximum time ghost stays invisible
+        SPAWN_RADIUS: 2.0, // meters - radius around spawn point where ghost can reappear
     },
 
     // ==================== GAME ====================
