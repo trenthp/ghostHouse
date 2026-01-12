@@ -307,7 +307,6 @@ class HalloweenGhostHouse {
 
     setCustomLocation(lat, lng, label) {
         this.customLocation = { lat, lng, label };
-        console.log('Custom location set:', label);
         // Ghost spawning will be handled by the next onLocationUpdate call
         // which will now respect the custom location
     }
@@ -316,9 +315,6 @@ class HalloweenGhostHouse {
         // Stop AR session
         this.arStarted = false;
         this.arManager?.stopAR();
-
-        // Stop audio
-        this.audioManager?.stopCreepingSound();
 
         // Deactivate ghosts
         this.ghostManager.deactivate();
@@ -348,8 +344,6 @@ class HalloweenGhostHouse {
             distance: 0,
             address: 'Calculating...'
         }, false);
-
-        console.log('Experience reset - showing intro modal');
     }
 
     onARStarted() {
@@ -366,7 +360,6 @@ class HalloweenGhostHouse {
         const finalScore = this.gameManager.getStats().scaresCount;
         this.audioManager?.playSound('success');
         this.uiManager.showGameComplete(finalScore);
-        console.log('Game complete! Final score:', finalScore);
     }
 
     onLocationUpdate(data) {

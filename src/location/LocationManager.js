@@ -17,7 +17,6 @@ export class LocationManager {
         this.isTracking = true;
 
         if (!navigator.geolocation) {
-            console.warn('Geolocation not supported');
             this.simulateTracking();
             return;
         }
@@ -25,17 +24,14 @@ export class LocationManager {
         // Initial position
         navigator.geolocation.getCurrentPosition(
             (position) => this.onPositionUpdate(position),
-            (error) => {
-                console.warn('Geolocation error:', error);
-                this.simulateTracking();
-            },
+            () => this.simulateTracking(),
             { enableHighAccuracy: true, timeout: 10000 }
         );
 
         // Watch position
         this.watchId = navigator.geolocation.watchPosition(
             (position) => this.onPositionUpdate(position),
-            (error) => console.warn('Watch position error:', error),
+            () => {}, // Silently handle watch errors
             { enableHighAccuracy: true, maximumAge: 1000 }
         );
     }
@@ -43,7 +39,6 @@ export class LocationManager {
     onPositionUpdate(position) {
         // Validate geolocation data
         if (!position || !position.coords) {
-            console.warn('Invalid position data received');
             return;
         }
 
@@ -51,7 +46,6 @@ export class LocationManager {
 
         // Validate coordinates
         if (!this._isValidCoordinate(latitude, longitude)) {
-            console.warn('Invalid coordinates:', latitude, longitude);
             return;
         }
 

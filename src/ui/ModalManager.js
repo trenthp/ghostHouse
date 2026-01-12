@@ -24,7 +24,6 @@ export class ModalManager {
      */
     show(modalId) {
         if (!this.modals[modalId]) {
-            console.warn(`Modal "${modalId}" not registered`);
             return false;
         }
 
@@ -51,7 +50,6 @@ export class ModalManager {
      */
     hide(modalId) {
         if (!this.modals[modalId]) {
-            console.warn(`Modal "${modalId}" not registered`);
             return false;
         }
 

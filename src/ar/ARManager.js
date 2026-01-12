@@ -20,10 +20,7 @@ export class ARManager {
     }
 
     checkARSupport() {
-        console.log('Checking WebXR support...');
-
         if (!navigator.xr) {
-            console.warn('❌ WebXR API not available on this browser');
             this.isARSupported = false;
             return;
         }
@@ -32,23 +29,14 @@ export class ARManager {
         navigator.xr.isSessionSupported('immersive-ar')
             .then((supported) => {
                 this.isARSupported = supported;
-                console.log('✅ immersive-ar support check result:', supported);
 
-                if (supported) {
-                    console.log('✅ AR is available!');
-                } else {
-                    console.log('⚠️  immersive-ar not directly supported. Checking for inline session...');
+                if (!supported) {
                     // Try inline session as fallback
                     return navigator.xr.isSessionSupported('inline');
                 }
             })
-            .then((inlineSupported) => {
-                if (inlineSupported && !this.isARSupported) {
-                    console.log('⚠️  Inline XR session available as fallback (not immersive AR)');
-                }
-            })
-            .catch((err) => {
-                console.error('Error checking AR support:', err);
+            .catch(() => {
+                this.isARSupported = false;
             });
     }
 
@@ -59,12 +47,10 @@ export class ARManager {
     initiateARPermissions() {
         const cfg = AR_CONFIG;
         if (this.hasAttemptedAR) {
-            console.log('AR session already attempted');
             return;
         }
 
         if (!this.isARSupported) {
-            console.error('AR not supported on this device');
             this.showPermissionModal(
                 cfg.PERMISSION_TITLE_NOT_SUPPORTED,
                 cfg.PERMISSION_MSG_NOT_SUPPORTED,
@@ -150,7 +136,6 @@ export class ARManager {
 
     async startAR() {
         if (this.hasAttemptedAR) {
-            console.log('AR session already attempted');
             return;
         }
 
@@ -158,13 +143,10 @@ export class ARManager {
         this.permissionState = 'checking';
 
         if (!this.isARSupported) {
-            console.error('AR not supported on this device');
             return;
         }
 
         try {
-            console.log('🚀 Requesting AR session...');
-
             // Request with only essential features, rest are optional
             const sessionInit = {
                 optionalFeatures: [
@@ -182,12 +164,6 @@ export class ARManager {
 
             this.xrSession = await navigator.xr.requestSession('immersive-ar', sessionInit);
 
-            console.log('✅ AR Session created successfully!');
-            console.log('Session details:', {
-                inputSources: this.xrSession.inputSources.length,
-                renderState: this.xrSession.renderState
-            });
-
             this.isARActive = true;
             this.permissionState = 'accepted';
 
@@ -195,10 +171,8 @@ export class ARManager {
             const arButton = document.getElementById('ar-button');
             if (arButton) arButton.style.display = 'none';
 
-            // Set the XR session - this is critical
-            console.log('Setting XR session on renderer...');
+            // Set the XR session
             this.renderer.xr.setSession(this.xrSession);
-            console.log('✅ XR session set on renderer');
 
             // Notify that AR has started
             if (this.onARStarted) {
@@ -207,12 +181,6 @@ export class ARManager {
 
         } catch (err) {
             const cfg = AR_CONFIG;
-            console.error('❌ Failed to start AR session:', err);
-            console.error('Error details:', {
-                name: err.name,
-                message: err.message,
-                stack: err.stack
-            });
 
             this.isARActive = false;
             this.permissionState = 'denied';
@@ -234,7 +202,6 @@ export class ARManager {
             this.isARActive = false;
             this.hasAttemptedAR = false;
             this.permissionState = 'pending';
-            console.log('AR session ended');
         }
     }
 

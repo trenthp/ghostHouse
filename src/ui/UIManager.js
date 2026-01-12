@@ -47,7 +47,7 @@ export class UIManager {
     }
 
     showError(message) {
-        console.error(message);
+        // Error display could be enhanced with a UI toast/alert
     }
 
     showGameComplete(finalScore) {

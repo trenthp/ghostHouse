@@ -9,9 +9,8 @@ An immersive WebXR application that displays ghosts flying around a specific hou
 - 📱 **Mobile WebXR**: Works on iOS and Android devices with AR support
 - 🎮 **Interactive Gameplay**:
   - Tap to scare ghosts and earn points
-  - Combo system for consecutive scares
-  - High score tracking
-  - Ghost spawning mechanics
+  - Scare each ghost twice to banish them
+  - Clear all 4 ghosts to win
 - 🔊 **Sound Effects**: Audio feedback for interactions
 - 🎨 **Halloween Theme**: Spooky visuals and effects
 
@@ -19,23 +18,22 @@ An immersive WebXR application that displays ghosts flying around a specific hou
 
 1. **Open the app** on a mobile device with WebXR support
 2. **Allow location access** when prompted
-3. **Navigate to the target house** (or tap "Enable Ghosts Anywhere" for demo)
-4. **Point your camera around** to see ghosts flying in AR
-5. **Tap ghosts** to scare them away and earn points
-6. **Build combos** for consecutive scares
+3. **Navigate to the target house** (within 50 meters)
+4. **Point your camera around** to see ghosts floating in AR
+5. **Tap ghosts** to scare them - each ghost needs 2 taps to banish
+6. **Clear all 4 ghosts** to protect the haunted house!
 
 ## Game Mechanics
 
 ### Scoring
-- **Scares**: +1 point for each ghost scared
-- **Combo**: Scare multiple ghosts within 5 seconds for multiplier
-- **High Score**: Automatically saved to device
+- **Scares**: +1 point for each successful scare
+- **Win condition**: Scare all 4 ghosts twice each (8 total scares)
 
 ### Ghost Behavior
-- **Flying**: Ghosts wander randomly in the AR space
-- **Spawning**: New ghosts spawn as old ones flee
-- **Fleeing**: Scared ghosts flee rapidly from player
-- **Despawning**: Ghosts disappear when too far away
+- **Floating**: Ghosts hover and bob gently in place
+- **Fading**: Ghosts fade in and out, reappearing nearby
+- **Scared**: Tapped ghosts shake and become translucent
+- **Banished**: After 2 scares, ghosts fade away completely
 
 ## Technical Stack
 
@@ -44,7 +42,6 @@ An immersive WebXR application that displays ghosts flying around a specific hou
 - **Vite**: Build tool and dev server
 - **Web Audio API**: Sound effects
 - **Geolocation API**: GPS tracking
-- **LocalStorage**: High score persistence
 
 ## Browser Support
 
@@ -130,8 +127,8 @@ ghostHouse/
 ### No ghosts appearing?
 - Ensure WebXR is enabled on your device
 - Check that you're near the target address (50m radius)
-- Try tapping "Enable Ghosts Anywhere" button for demo mode
-- Check browser console for errors
+- Try using "Set Custom Location" to play at your current location
+- Ensure AR session has started (camera should be active)
 
 ### AR camera not working?
 - Grant camera permissions to the website
