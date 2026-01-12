@@ -67,12 +67,12 @@ export const APP_CONFIG = {
 
     // ==================== GHOST INDIVIDUAL ====================
     ghost: {
-        HOVER_SPEED_MIN: 0.2,
-        HOVER_SPEED_MAX: 0.4,
-        BOB_AMOUNT: 0.1,
-        BOB_SPEED: 0.8,
-        HOVER_RADIUS_MIN: 0.15,
-        HOVER_RADIUS_MAX: 0.35,
+        HOVER_SPEED_MIN: 0.15,
+        HOVER_SPEED_MAX: 0.25,
+        BOB_AMOUNT: 0.03, // Subtle vertical bob (3cm) - feels more anchored in AR
+        BOB_SPEED: 0.6,
+        HOVER_RADIUS_MIN: 0.03, // Minimal horizontal drift (3cm)
+        HOVER_RADIUS_MAX: 0.08, // Max 8cm drift - ghosts stay mostly in place
         BODY_RADIUS: 0.35,
         BODY_HEIGHT: 0.8,
         EYE_RADIUS: 0.07,
@@ -84,11 +84,11 @@ export const APP_CONFIG = {
         MIN_DISTANCE_FROM_CAMERA: 1.0, // meters - keep at least 1m from user
 
         // Fade in/out behavior
-        VISIBLE_DURATION_MIN: 1.0, // seconds - minimum time ghost stays visible
-        VISIBLE_DURATION_MAX: 3.0, // seconds - maximum time ghost stays visible
-        INVISIBLE_DURATION_MIN: 1.0, // seconds - minimum time ghost stays invisible
+        VISIBLE_DURATION_MIN: 2.0, // seconds - minimum time ghost stays visible
+        VISIBLE_DURATION_MAX: 5.0, // seconds - maximum time ghost stays visible
+        INVISIBLE_DURATION_MIN: 1.5, // seconds - minimum time ghost stays invisible
         INVISIBLE_DURATION_MAX: 3.0, // seconds - maximum time ghost stays invisible
-        SPAWN_RADIUS: 2.0, // meters - radius around spawn point where ghost can reappear
+        SPAWN_RADIUS: 0.5, // meters - small radius so ghosts reappear near same spot
     },
 
     // ==================== GAME ====================

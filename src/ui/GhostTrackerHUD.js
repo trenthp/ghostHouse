@@ -3,24 +3,24 @@ import * as THREE from 'three';
 // Ghost Tracker HUD configuration constants
 const HUD_CONFIG = {
     // Visual
-    INDICATOR_SIZE: 40, // pixels
-    EDGE_PADDING: 10, // pixels from viewport edge
-    EDGE_HEIGHT: 50, // pixels
-    EDGE_WIDTH: 50, // pixels
+    INDICATOR_SIZE: 56, // pixels - larger for better visibility
+    EDGE_PADDING: 20, // pixels from viewport edge
+    EDGE_HEIGHT: 60, // pixels
+    EDGE_WIDTH: 60, // pixels
     MAX_TRACKED_DISTANCE: 50, // meters
 
     // Colors
     INDICATOR_COLOR_RGB: '255, 107, 53', // Orange/red (#ff6b35)
-    INDICATOR_BORDER_WIDTH: 2,
-    INDICATOR_OPACITY_MIN: 0.1,
-    INDICATOR_OPACITY_MAX: 0.15,
-    GLOW_BLUR_MIN: 10,
-    GLOW_BLUR_MAX: 25,
+    INDICATOR_BORDER_WIDTH: 3,
+    INDICATOR_OPACITY_MIN: 0.15,
+    INDICATOR_OPACITY_MAX: 0.3,
+    GLOW_BLUR_MIN: 12,
+    GLOW_BLUR_MAX: 30,
 
     // Animation
-    PULSE_DURATION: '1s',
-    DISTANCE_LABEL_OFFSET: -20, // pixels below indicator
-    DISTANCE_LABEL_FONT_SIZE: 10, // pixels
+    PULSE_DURATION: '1.5s',
+    DISTANCE_LABEL_OFFSET: -22, // pixels below indicator
+    DISTANCE_LABEL_FONT_SIZE: 12, // pixels
 };
 
 /**
@@ -183,10 +183,10 @@ export class GhostTrackerHUD {
             element.style.top = screenPos.y + 'px';
 
             // Update distance label
-            const distanceM = Math.max(2, Math.round(distance));
+            const distanceM = Math.max(1, Math.round(distance));
             distanceLabel.textContent = `${distanceM}m`;
 
-            // Update indicator color based on proximity
+            // Update indicator intensity based on proximity (closer = brighter)
             const cfg = HUD_CONFIG;
             const proximityRatio = Math.min(distance / this.maxTrackedDistance, 1);
             const intensity = 1 - proximityRatio;
@@ -195,8 +195,10 @@ export class GhostTrackerHUD {
             const glowSize = cfg.GLOW_BLUR_MIN + intensity * (cfg.GLOW_BLUR_MAX - cfg.GLOW_BLUR_MIN);
             const shadowOpacity = 0.5 + intensity * 0.5;
 
-            // Batch style updates to minimize repaints
-            element.style.cssText = `border-color: rgba(${rgb}, ${shadowOpacity}); box-shadow: 0 0 ${glowSize}px rgba(${rgb}, ${shadowOpacity}), inset 0 0 10px rgba(${rgb}, 0.3); background: rgba(${rgb}, ${opacity});`;
+            // Update only the dynamic styles (preserve position styles)
+            element.style.borderColor = `rgba(${rgb}, ${shadowOpacity})`;
+            element.style.boxShadow = `0 0 ${glowSize}px rgba(${rgb}, ${shadowOpacity}), inset 0 0 10px rgba(${rgb}, 0.3)`;
+            element.style.background = `rgba(${rgb}, ${opacity})`;
         });
 
         // Remove indicators for ghosts no longer creeping
@@ -224,23 +226,24 @@ export class GhostTrackerHUD {
 
         // Get camera up direction
         const cameraUp = new THREE.Vector3(0, 1, 0);
+        cameraUp.applyQuaternion(camera.quaternion);
 
         // Project direction onto screen space
-        const forward = direction.clone().dot(cameraForward);
-        const right = direction.clone().dot(cameraRight);
-        const up = direction.clone().dot(cameraUp);
+        const forward = direction.dot(cameraForward);
+        const right = direction.dot(cameraRight);
+        const up = direction.dot(cameraUp);
 
         // Calculate screen coordinates (center is 0,0)
-        // Avoid division by zero - if forward is too small, ghost is behind camera
-        let screenX = 0;
-        let screenY = 0;
-        if (Math.abs(forward) > 0.01) {
+        let screenX, screenY;
+
+        if (forward > 0.1) {
+            // Ghost is in front - project to screen space
             screenX = (right / forward) * (viewportWidth / 2);
             screenY = -(up / forward) * (viewportHeight / 2);
         } else {
-            // Ghost is behind camera, put indicator at center
-            screenX = 0;
-            screenY = 0;
+            // Ghost is behind or beside camera - use direction directly
+            screenX = right * viewportWidth;
+            screenY = -up * viewportHeight;
         }
 
         // Clamp to viewport edges with padding
@@ -248,16 +251,22 @@ export class GhostTrackerHUD {
         const maxX = viewportWidth / 2 - padding;
         const maxY = viewportHeight / 2 - padding;
 
-        const magnitude = Math.sqrt(screenX * screenX + screenY * screenY);
-        if (magnitude > Math.max(maxX, maxY)) {
-            const scale = Math.max(maxX, maxY) / magnitude;
-            screenX *= scale;
-            screenY *= scale;
+        // Project to edge of screen (not just scale uniformly)
+        // Find where the line from center to (screenX, screenY) intersects the edge
+        if (Math.abs(screenX) > 0.001 || Math.abs(screenY) > 0.001) {
+            const scaleX = Math.abs(screenX) > 0.001 ? maxX / Math.abs(screenX) : Infinity;
+            const scaleY = Math.abs(screenY) > 0.001 ? maxY / Math.abs(screenY) : Infinity;
+            const scale = Math.min(scaleX, scaleY, 1);
+
+            if (scale < 1) {
+                screenX *= scale;
+                screenY *= scale;
+            }
         }
 
-        // Convert to absolute coordinates
-        const absoluteX = viewportWidth / 2 + screenX;
-        const absoluteY = viewportHeight / 2 + screenY;
+        // Convert to absolute coordinates (top-left origin)
+        const absoluteX = viewportWidth / 2 + screenX - this.indicatorSize / 2;
+        const absoluteY = viewportHeight / 2 + screenY - this.indicatorSize / 2;
 
         return { x: absoluteX, y: absoluteY };
     }
