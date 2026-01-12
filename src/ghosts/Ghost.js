@@ -214,7 +214,7 @@ export class Ghost {
         }
 
         // Distance-based scaling (reuse distToCamera calculated above)
-        const maxDist = 50;
+        const maxDist = APP_CONFIG.ghostManager.VISIBILITY_RADIUS;
         this.scale = Math.max(0.3, 1 - (distToCamera / maxDist) * 0.7);
         this.mesh.scale.setScalar(this.scale);
     }

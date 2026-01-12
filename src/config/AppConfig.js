@@ -94,5 +94,7 @@ export const APP_CONFIG = {
     // ==================== GAME ====================
     game: {
         SCORE_PER_SCARE: 1, // points earned per ghost scare
+        WIN_SCORE_THRESHOLD: 8, // 4 ghosts × 2 scares each = 8 total scares to win
+        LOCATION_ACTIVATION_DISTANCE: 50, // meters - ghosts spawn when within this distance
     },
 };

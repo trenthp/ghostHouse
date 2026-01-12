@@ -5,9 +5,10 @@ import { APP_CONFIG } from '../config/AppConfig.js';
 const GHOST_MANAGER_CONFIG = APP_CONFIG.ghostManager;
 
 export class GhostManager {
-    constructor(scene, gameManager) {
+    constructor(scene, gameManager, audioManager = null) {
         this.scene = scene;
         this.gameManager = gameManager;
+        this.audioManager = audioManager;
 
         this.ghosts = [];
         this.isActive = false;
@@ -28,8 +29,6 @@ export class GhostManager {
 
         // Game completion tracking
         this.ghostsSpawned = 0;
-        this.gameComplete = false;
-        this.onGameCompleteCallback = null;
     }
 
     setTargetLocation(targetPosition) {
@@ -42,7 +41,6 @@ export class GhostManager {
         this.spawnTimer = 0;
         this.ghosts = [];
         this.ghostsSpawned = 0;
-        this.gameComplete = false;
     }
 
     deactivate() {
@@ -74,14 +72,6 @@ export class GhostManager {
             if (distToTargetLocation > GHOST_MANAGER_CONFIG.VISIBILITY_RADIUS) {
                 ghost.remove();
                 this.ghosts.splice(i, 1);
-            }
-        }
-
-        // Check if game is complete (all ghosts spawned and all removed)
-        if (!this.gameComplete && this.ghostsSpawned >= this.maxGhosts && this.ghosts.length === 0) {
-            this.gameComplete = true;
-            if (this.onGameCompleteCallback) {
-                this.onGameCompleteCallback();
             }
         }
     }
@@ -133,6 +123,7 @@ export class GhostManager {
         }
 
         const ghost = new Ghost(position, this.ghosts.length);
+        this.audioManager?.playSound('spawn');
         this.scene.add(ghost.getMesh());
         this.ghosts.push(ghost);
         this.ghostsSpawned++;
@@ -157,9 +148,5 @@ export class GhostManager {
 
     getScaredGhosts() {
         return this.ghosts.filter(g => g.isScared()).length;
-    }
-
-    setOnGameCompleteCallback(callback) {
-        this.onGameCompleteCallback = callback;
     }
 }

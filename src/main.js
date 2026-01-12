@@ -5,6 +5,9 @@ import { LocationManager } from './location/LocationManager.js';
 import { GameManager } from './game/GameManager.js';
 import { UIManager } from './ui/UIManager.js';
 import { ModalManager } from './ui/ModalManager.js';
+import { AudioManager } from './audio/AudioManager.js';
+import { GhostTrackerHUD } from './ui/GhostTrackerHUD.js';
+import { APP_CONFIG } from './config/AppConfig.js';
 
 class HalloweenGhostHouse {
     constructor() {
@@ -18,6 +21,8 @@ class HalloweenGhostHouse {
         this.gameManager = null;
         this.uiManager = null;
         this.modalManager = null;
+        this.audioManager = null;
+        this.ghostTrackerHUD = null;
 
         this.isRunning = false;
         this.arStarted = false; // Don't spawn ghosts until AR is started
@@ -33,11 +38,10 @@ class HalloweenGhostHouse {
             this.gameManager = new GameManager();
             this.uiManager = new UIManager();
             this.locationManager = new LocationManager();
-            this.ghostManager = new GhostManager(this.scene, this.gameManager);
+            this.audioManager = new AudioManager();
+            this.ghostManager = new GhostManager(this.scene, this.gameManager, this.audioManager);
             this.modalManager = new ModalManager();
-
-            // Set game complete callback
-            this.ghostManager.setOnGameCompleteCallback(() => this.onGameComplete());
+            this.ghostTrackerHUD = new GhostTrackerHUD();
 
             // Register modals
             this.registerModals();
@@ -254,11 +258,12 @@ class HalloweenGhostHouse {
                 if (ghost) {
                     // Award point only if scare is successful (ghost can be scared max 2 times)
                     if (ghost.scare()) {
+                        this.audioManager?.playSound('scare');
                         this.gameManager.onGhostScared();
                         const currentScore = this.gameManager.getStats().scaresCount;
                         this.uiManager.updateScore(currentScore);
                         // Check if game is won (8 points = 4 ghosts × 2 scares each)
-                        if (currentScore >= 8) {
+                        if (currentScore >= APP_CONFIG.game.WIN_SCORE_THRESHOLD) {
                             this.onGameComplete();
                         }
                     }
@@ -315,6 +320,12 @@ class HalloweenGhostHouse {
         this.arStarted = false;
         this.arManager?.stopAR();
 
+        // Stop audio
+        this.audioManager?.stopCreepingSound();
+
+        // Clear HUD indicators
+        this.ghostTrackerHUD?.clearAllIndicators();
+
         // Deactivate ghosts
         this.ghostManager.deactivate();
 
@@ -359,6 +370,7 @@ class HalloweenGhostHouse {
     onGameComplete() {
         // Game is complete - show victory modal with final score
         const finalScore = this.gameManager.getStats().scaresCount;
+        this.audioManager?.playSound('success');
         this.uiManager.showGameComplete(finalScore);
         console.log('Game complete! Final score:', finalScore);
     }
@@ -381,13 +393,13 @@ class HalloweenGhostHouse {
                 targetLat,
                 targetLng
             );
-            isAtLocation = distance < 50;
+            isAtLocation = distance < APP_CONFIG.game.LOCATION_ACTIVATION_DISTANCE;
         } else {
             // Using default/GPS tracked location
             targetLat = data.targetLat;
             targetLng = data.targetLng;
             label = data.address;
-            isAtLocation = data.distance < 50;
+            isAtLocation = data.distance < APP_CONFIG.game.LOCATION_ACTIVATION_DISTANCE;
         }
 
         // Update UI with location status
@@ -446,6 +458,17 @@ class HalloweenGhostHouse {
             // Update ghost manager
             if (this.ghostManager.isActive) {
                 this.ghostManager.update(deltaTime, this.camera);
+
+                // Update HUD to track off-screen ghosts
+                if (this.ghostTrackerHUD) {
+                    const creepingGhosts = this.calculateCreepingGhosts();
+                    this.ghostTrackerHUD.update(
+                        creepingGhosts,
+                        this.camera,
+                        window.innerWidth,
+                        window.innerHeight
+                    );
+                }
             }
 
             // Update game manager
@@ -454,6 +477,41 @@ class HalloweenGhostHouse {
             // Render - renderer handles XR automatically when session is active
             this.renderer.render(this.scene, this.camera);
         });
+    }
+
+    calculateCreepingGhosts() {
+        const creepingGhosts = [];
+        const frustum = new THREE.Frustum();
+        const projScreenMatrix = new THREE.Matrix4();
+
+        // Update frustum from camera
+        projScreenMatrix.multiplyMatrices(
+            this.camera.projectionMatrix,
+            this.camera.matrixWorldInverse
+        );
+        frustum.setFromProjectionMatrix(projScreenMatrix);
+
+        // Check each ghost
+        this.ghostManager.ghosts.forEach(ghost => {
+            const position = ghost.getPosition();
+
+            // If ghost is not in the camera frustum, it's "creeping" off-screen
+            if (!frustum.containsPoint(position)) {
+                const direction = position.clone()
+                    .sub(this.camera.position)
+                    .normalize();
+
+                const distance = position.distanceTo(this.camera.position);
+
+                creepingGhosts.push({
+                    ghost: ghost,
+                    direction: direction,
+                    distance: distance
+                });
+            }
+        });
+
+        return creepingGhosts;
     }
 
     onWindowResize() {
