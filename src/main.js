@@ -6,7 +6,6 @@ import { GameManager } from './game/GameManager.js';
 import { UIManager } from './ui/UIManager.js';
 import { ModalManager } from './ui/ModalManager.js';
 import { AudioManager } from './audio/AudioManager.js';
-import { GhostTrackerHUD } from './ui/GhostTrackerHUD.js';
 import { APP_CONFIG } from './config/AppConfig.js';
 
 class HalloweenGhostHouse {
@@ -22,7 +21,6 @@ class HalloweenGhostHouse {
         this.uiManager = null;
         this.modalManager = null;
         this.audioManager = null;
-        this.ghostTrackerHUD = null;
 
         this.isRunning = false;
         this.arStarted = false; // Don't spawn ghosts until AR is started
@@ -41,7 +39,6 @@ class HalloweenGhostHouse {
             this.audioManager = new AudioManager();
             this.ghostManager = new GhostManager(this.scene, this.gameManager, this.audioManager);
             this.modalManager = new ModalManager();
-            this.ghostTrackerHUD = new GhostTrackerHUD();
 
             // Register modals
             this.registerModals();
@@ -323,9 +320,6 @@ class HalloweenGhostHouse {
         // Stop audio
         this.audioManager?.stopCreepingSound();
 
-        // Clear HUD indicators
-        this.ghostTrackerHUD?.clearAllIndicators();
-
         // Deactivate ghosts
         this.ghostManager.deactivate();
 
@@ -458,17 +452,6 @@ class HalloweenGhostHouse {
             // Update ghost manager
             if (this.ghostManager.isActive) {
                 this.ghostManager.update(deltaTime, this.camera);
-
-                // Update HUD to track off-screen ghosts
-                if (this.ghostTrackerHUD) {
-                    const creepingGhosts = this.calculateCreepingGhosts();
-                    this.ghostTrackerHUD.update(
-                        creepingGhosts,
-                        this.camera,
-                        window.innerWidth,
-                        window.innerHeight
-                    );
-                }
             }
 
             // Update game manager
@@ -477,41 +460,6 @@ class HalloweenGhostHouse {
             // Render - renderer handles XR automatically when session is active
             this.renderer.render(this.scene, this.camera);
         });
-    }
-
-    calculateCreepingGhosts() {
-        const creepingGhosts = [];
-        const frustum = new THREE.Frustum();
-        const projScreenMatrix = new THREE.Matrix4();
-
-        // Update frustum from camera
-        projScreenMatrix.multiplyMatrices(
-            this.camera.projectionMatrix,
-            this.camera.matrixWorldInverse
-        );
-        frustum.setFromProjectionMatrix(projScreenMatrix);
-
-        // Check each ghost
-        this.ghostManager.ghosts.forEach(ghost => {
-            const position = ghost.getPosition();
-
-            // If ghost is not in the camera frustum, it's "creeping" off-screen
-            if (!frustum.containsPoint(position)) {
-                const direction = position.clone()
-                    .sub(this.camera.position)
-                    .normalize();
-
-                const distance = position.distanceTo(this.camera.position);
-
-                creepingGhosts.push({
-                    ghost: ghost,
-                    direction: direction,
-                    distance: distance
-                });
-            }
-        });
-
-        return creepingGhosts;
     }
 
     onWindowResize() {
